@@ -1,0 +1,86 @@
+<!-- Home | SoftDFT | | SoftDFT is an open-source Julia package for classical density functional theory of complex and confined fluids: electrolytes, polymers, brushes and charge-regulating soft matter. -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Open-source classical density functional theory</div>
+      <h1>Structure and thermodynamics of <em>complex and confined fluids</em></h1>
+      <p>SoftDFT is a modular Julia package for classical DFT of soft matter. It handles hard-sphere fluids,
+      electrolytes, tethered and free polymers, and chemically responsive species whose charge states adjust
+      to their local environment. Calculations run on 1D, 2D and 3D Cartesian grids with FFT-based convolutions.</p>
+      <div class="btns">
+        <a class="btn primary" href="install.html">Get started</a>
+        <a class="btn ghost" href="examples.html">See examples</a>
+        <a class="btn ghost" href="{{REPO}}">Source code</a>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /hero -->
+<h2>What SoftDFT does</h2>
+<p class="lead">Classical DFT predicts equilibrium density profiles and thermodynamic properties of fluids near
+surfaces and in confinement by minimizing a grand-potential functional. It reaches the length scales of
+experiments at a small fraction of the cost of molecular simulation. SoftDFT is built on the
+<strong>Ising density functional theory</strong> (iDFT) framework. iDFT adds an internal-state variable to
+polymer DFT, so the ionization of each segment and the conformation of each chain evolve together under pH,
+salt and confinement.</p>
+
+<div class="pipeline" aria-label="Calculation pipeline">
+  <span>molecular_system</span><i>&rarr;</i><span>iLST (bulk)</span><i>&rarr;</i><span>geometry</span><i>&rarr;</i><span>iDFT (inhomogeneous)</span>
+</div>
+
+<div class="grid c3">
+  <a class="card" href="features.html#functionals"><span class="tag">Free energies</span><h3>Modular functionals</h3>
+    <p>Ideal, modified fundamental measure theory, TPT1 chain connectivity, MSA electrostatic correlations and
+    square-well attractions, combined by name in the input file.</p></a>
+  <a class="card" href="features.html#chemistry"><span class="tag">Chemistry</span><h3>Reactions &amp; charge regulation</h3>
+    <p>General reaction schemes with p<em>K</em> values, a reservoir pH, multi-state species and ionizable
+    surfaces whose charge is solved self-consistently.</p></a>
+  <a class="card" href="features.html#geometry"><span class="tag">Geometry</span><h3>1D, 2D and 3D grids</h3>
+    <p>Cartesian slits and periodic boxes with hard, charged, square-well, point-charge, charge-regulated and
+    user-supplied external fields.</p></a>
+</div>
+
+<h2>Quick look</h2>
+<p>A calculation is described by one YAML file and run with one function call:</p>
+<pre><code><span class="c"># input.yaml: weak polyacid brush at pH 7</span>
+procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [15.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls: { dims: [1] }
+species:
+  - sequence: "AAAAAAAA"
+    density: 0.0
+    fixed: { density: 0.05, segment: [1], position: ["left"] }
+  - { sequence: "c", density: 0.01, adjustable: true }
+  - { sequence: "a", density: 0.01, adjustable: true }
+  - { sequence: "Y", pSpecies: 7.0 }
+  - { sequence: "Z" }
+reactions:
+  - { species: ["A", "Y", "B"], coeffs: [-1, 1, 1], pK: 4.756 }
+  - { species: ["Y", "Z"], coeffs: [1, 1], pK: 14.0 }
+model: [ideal, TPT1mfmt, TPT1msa]</code></pre>
+<pre><code>julia&gt; include("src/iDFT/iDFT.jl")
+julia&gt; system = iDFT("input.yaml")</code></pre>
+<p class="small muted">The monomer and numerical blocks are omitted here; see the
+<a href="docs.html">User Guide</a> for the full input format and the
+<a href="examples.html#charge-regulating-brush">complete example</a>.</p>
+
+<h2>Project</h2>
+<div class="grid c2">
+  <div class="card">
+    <h3>Goals</h3>
+    <p>SoftDFT aims to be a general-purpose, open and reproducible platform for 3D classical DFT. The planned
+    work consolidates the equilibrium engine behind a geometry-aware coordinate-system layer, builds a validated
+    benchmark gallery, and adds parameter-continuation, phase-equilibrium and time-dependent (dynamic DFT)
+    workflows.</p>
+  </div>
+  <div class="card">
+    <h3>Community</h3>
+    <p>Source code, documentation, tutorials and example workflows are released openly. Questions, bug
+    reports and feature requests are welcome through <a href="{{REPO}}/issues">GitHub Issues</a>.
+    Workshops and course modules are planned.</p>
+  </div>
+</div>

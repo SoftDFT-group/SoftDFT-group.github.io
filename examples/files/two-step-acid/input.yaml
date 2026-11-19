@@ -1,0 +1,53 @@
+procedure: iLST
+species:
+  - sequence: "A"
+    density: 0.01
+  - sequence: "c"
+    density: 0.01
+    adjustable: true
+  - sequence: "a"
+    density: 0.01
+    adjustable: true
+  - sequence: "Y"
+    pSpecies: 7.0
+  - sequence: "Z"
+reactions:
+  - species: ["A", "Y", "B"]
+    coeffs: [-1, 1, 1]
+    pK: 4.0
+  - species: ["B", "Y", "C"]
+    coeffs: [-1, 1, 1]
+    pK: 8.0
+  - species: ["Y", "Z"]
+    coeffs: [1, 1]
+    pK: 14.0
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.0
+    valence: -1.0
+  C:
+    diameter: 1.0
+    valence: -2.0
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+  Y:
+    diameter: 1.0
+    valence: 1.0
+  Z:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 1000
+  tole: 1e-10
+model:
+  - ideal

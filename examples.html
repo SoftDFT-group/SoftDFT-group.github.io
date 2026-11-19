@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Examples — SoftDFT</title>
+<meta name="description" content="SoftDFT examples: ideal gas, hard spheres, polymer brushes, electrolytes, charge regulation and literature benchmarks, with input files and figures.">
+<link rel="canonical" href="https://softdft-group.github.io/examples.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>
+  <div class="nmsu-band">
+    <div class="wrap">
+      <div class="unit">
+        <strong><a href="https://chme.nmsu.edu/">Chemical &amp; Materials Engineering</a></strong>
+        <a href="https://www.nmsu.edu/">New Mexico State University</a>
+      </div>
+    </div>
+  </div>
+  <div class="sitebar">
+    <div class="wrap">
+      <a class="brand" href="index.html">Soft<span>DFT</span></a>
+      <ul class="nav" id="nav">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="features.html">Features</a></li>
+        <li><a href="install.html">Install</a></li>
+        <li><a href="docs.html">User Guide</a></li>
+        <li><a href="examples.html" aria-current="page">Examples</a></li>
+        <li><a href="publications.html">Publications</a></li>
+        <li><a href="people.html">People</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+<section class="pagehead"><div class="wrap"><div class="eyebrow">Examples</div><h1>Example gallery</h1><p>Worked calculations with complete input files, from exact checks to comparisons with published simulations.</p></div></section>
+<main id="main">
+<div class="wrap">
+<p class="lead">Each example lists what it tests, the numbers it produced, and its complete input file. To run
+one, save the input to an empty folder, change into that folder and call
+<code>iDFT("input.yaml")</code> (see <a href="install.html#run">Install</a>). Reported residuals were checked
+independently after each run.</p>
+<p class="small muted">Lengths are in bead diameters d (= l_sc) unless an example sets physical units. Some
+examples were produced with development builds that include small fixes still being merged into the main
+branch.</p>
+<div class="filters" role="group" aria-label="Filter examples"><button type="button" data-f="all" aria-pressed="true">All</button><button type="button" data-f="exact" aria-pressed="false">Exact & consistency checks</button><button type="button" data-f="hs" aria-pressed="false">Hard spheres</button><button type="button" data-f="polymer" aria-pressed="false">Polymers & brushes</button><button type="button" data-f="elec" aria-pressed="false">Electrolytes</button><button type="button" data-f="reg" aria-pressed="false">Charge regulation</button><button type="button" data-f="lit" aria-pressed="false">Literature benchmarks</button></div>
+<article class="example" data-cat="exact"><div><span class="num">Example 01</span><h3 id="ideal-gas-slit">Ideal gas in a hard-wall slit</h3><div class="meta"><span class="chip cat">Exact & consistency checks</span><span class="chip">1D</span><span class="chip">ideal</span></div><p>The simplest possible inhomogeneous calculation: an ideal gas between two hard walls. With only the ideal free-energy term, the equilibrium density is the Boltzmann profile, so SoftDFT can be compared with the exact answer at every grid point.</p><ul class="results"><li>Maximum absolute profile error about 7&times;10<sup>&minus;18</sup> (machine precision).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [10.0]
+  bin_width: [0.1]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;A&quot;
+    density: 0.05
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 100
+  tole: 1e-9
+model:
+  - ideal</code></pre><p class="small"><a href="examples/files/ideal-gas-slit/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch01.png" alt="Schematic of the system: Ideal gas in a hard-wall slit"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex01_ideal_gas.png"><img loading="lazy" src="assets/img/examples/ex01_ideal_gas.png" alt="SoftDFT and exact ideal-gas density profiles overlap"></a><figcaption>SoftDFT (dashed) lies on top of the exact Boltzmann profile (grey).</figcaption></figure></div></article>
+<article class="example" data-cat="exact"><div><span class="num">Example 02</span><h3 id="patterned-3d-ideal-gas">Three-dimensional ideal gas in a patterned external field</h3><div class="meta"><span class="chip cat">Exact & consistency checks</span><span class="chip">3D</span><span class="chip">external field</span></div><p>A user-supplied external potential that varies along <em>x</em>, <em>y</em> and <em>z</em> (including a mixed <em>x+y+z</em> term) is read from file on a 9&times;9&times;9 grid. The ideal-gas density must equal &rho;<sub>b</sub>&nbsp;exp[&minus;&beta;V(x,y,z)] in every cell, which tests the 3D grid indexing and the <code>input_external</code> field reader.</p><ul class="results"><li>Bulk density &rho;<sub>b</sub>d<sup>3</sup> = 0.1; the local density ranges from 0.039 to 0.258 across the box and varies along all three axes.</li><li>Potential mapping error: 0.</li><li>Maximum density error against the exact formula: 8.3&times;10<sup>&minus;17</sup>.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [4.0, 4.0, 4.0]
+  bin_width: [0.5, 0.5, 0.5]
+  external_field:
+    input_external:
+      dims: [1, 2, 3]
+      file: potential.csv
+species:
+  - sequence: &quot;A&quot;
+    density: 0.1
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 100
+  damping: 0.5
+  mixing_max: 0.5
+  tole: 1e-11
+model:
+  - ideal</code></pre><p class="small"><a href="examples/files/patterned-3d-ideal-gas/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch02.png" alt="Schematic of the system: Three-dimensional ideal gas in a patterned external field"><figcaption>System sketch (not to scale).</figcaption></figure></div></article>
+<article class="example" data-cat="exact"><div><span class="num">Example 03</span><h3 id="binary-hs-pressure">Binary hard-sphere mixture: bulk pressure</h3><div class="meta"><span class="chip cat">Exact & consistency checks</span><span class="chip">bulk</span><span class="chip">mFMT</span></div><p>A bulk (iLST) calculation for a two-component hard-sphere mixture. The compressibility factor from SoftDFT's excluded-volume model is compared with the analytical Boyle&ndash;Mansoori&ndash;Carnahan&ndash;Starling&ndash;Leland (BMCSL) equation of state.</p><ul class="results"><li>State point: &rho;<sub>A</sub>d<sup>3</sup> = 0.08 (d<sub>A</sub> = 1.0), &rho;<sub>B</sub>d<sup>3</sup> = 0.06 (d<sub>B</sub> = 1.5), packing fraction 0.148.</li><li>SoftDFT <em>Z</em> = 1.8281429558181252; BMCSL <em>Z</em> = 1.8281429558181255.</li><li>Relative error 1.2&times;10<sup>&minus;16</sup> (machine precision).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iLST
+species:
+  - sequence: &quot;A&quot;
+    density: 0.08
+  - sequence: &quot;B&quot;
+    density: 0.06
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.5
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+model:
+  - ideal
+  - mfmt</code></pre><p class="small"><a href="examples/files/binary-hs-pressure/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch03.png" alt="Schematic of the system: Binary hard-sphere mixture: bulk pressure"><figcaption>System sketch (not to scale).</figcaption></figure></div></article>
+<article class="example" data-cat="exact"><div><span class="num">Example 04</span><h3 id="bulk-derivatives">Bulk thermodynamic consistency</h3><div class="meta"><span class="chip cat">Exact & consistency checks</span><span class="chip">bulk</span><span class="chip">square well</span></div><p>A neutral A/B mixture with different diameters and ideal, mFMT and square-well terms. Each density is perturbed by &plusmn;10<sup>&minus;6</sup>; the central-difference derivative of the excess free energy is compared with SoftDFT's excess chemical potential, and the pressure identity <em>P</em> = &Sigma;&rho;<sub>i</sub> &minus; <em>f</em><sub>ex</sub> + &Sigma;&rho;<sub>i</sub>&mu;<sub>ex,i</sub> is checked.</p><ul class="results"><li>Maximum derivative discrepancy 7.2&times;10<sup>&minus;12</sup>.</li><li>Bulk pressure &beta;<em>P</em>d<sup>3</sup> = 0.103623 from SoftDFT and from the identity; discrepancy 0.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iLST
+species:
+  - sequence: &quot;A&quot;
+    density: 0.03
+  - sequence: &quot;B&quot;
+    density: 0.06
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.2
+    valence: 0.0
+pairs:
+  square_well:
+    A, A:
+      energy: 0.5
+      lambda: 1.5
+    A, B:
+      energy: 0.2
+      lambda: 1.5
+    B, B:
+      energy: 0.3
+      lambda: 1.5
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+model:
+  - ideal
+  - mfmt
+  - sw</code></pre><p class="small"><a href="examples/files/bulk-derivatives/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch04.png" alt="Schematic of the system: Bulk thermodynamic consistency"><figcaption>System sketch (not to scale).</figcaption></figure></div></article>
+<article class="example" data-cat="exact"><div><span class="num">Example 05</span><h3 id="two-step-acid">Two-step acid equilibrium</h3><div class="meta"><span class="chip cat">Exact & consistency checks</span><span class="chip">bulk</span><span class="chip">reactions</span><span class="chip">pH</span></div><p>A species with three charge states (A, B<sup>&minus;</sup>, C<sup>2&minus;</sup>) undergoes A &#8652; B + H<sup>+</sup> (p<em>K</em> 4) and B &#8652; C + H<sup>+</sup> (p<em>K</em> 8). At pH 4, 7 and 10 the state fractions are compared with elementary mass action, A:B:C = 1 : 10<sup>pH&minus;4</sup> : 10<sup>2pH&minus;12</sup>. The published input is the pH 7 case.</p><ul class="results"><li>Largest fraction error 2.3&times;10<sup>&minus;16</sup>; net charge zero to machine precision.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iLST
+species:
+  - sequence: &quot;A&quot;
+    density: 0.01
+  - sequence: &quot;c&quot;
+    density: 0.01
+    adjustable: true
+  - sequence: &quot;a&quot;
+    density: 0.01
+    adjustable: true
+  - sequence: &quot;Y&quot;
+    pSpecies: 7.0
+  - sequence: &quot;Z&quot;
+reactions:
+  - species: [&quot;A&quot;, &quot;Y&quot;, &quot;B&quot;]
+    coeffs: [-1, 1, 1]
+    pK: 4.0
+  - species: [&quot;B&quot;, &quot;Y&quot;, &quot;C&quot;]
+    coeffs: [-1, 1, 1]
+    pK: 8.0
+  - species: [&quot;Y&quot;, &quot;Z&quot;]
+    coeffs: [1, 1]
+    pK: 14.0
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.0
+    valence: -1.0
+  C:
+    diameter: 1.0
+    valence: -2.0
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+  Y:
+    diameter: 1.0
+    valence: 1.0
+  Z:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 1000
+  tole: 1e-10
+model:
+  - ideal</code></pre><p class="small"><a href="examples/files/two-step-acid/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch13.png" alt="Schematic of the system: Two-step acid equilibrium"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex13_two_step_acid.png"><img loading="lazy" src="assets/img/examples/ex13_two_step_acid.png" alt="Bar chart of state fractions at pH 4, 7, 10 with mass-action points"></a><figcaption>Bars: SoftDFT state fractions. Dots: ideal mass action.</figcaption></figure></div></article>
+<article class="example" data-cat="hs"><div><span class="num">Example 06</span><h3 id="hs-wall">Hard spheres at a planar hard wall</h3><div class="meta"><span class="chip cat">Hard spheres</span><span class="chip">1D</span><span class="chip">mFMT</span></div><p>A one-component hard-sphere fluid at &rho;<sub>b</sub>d<sup>3</sup> = 0.305 next to a hard wall. The contact value theorem requires the contact density to equal &beta;<em>P</em> of the bulk fluid.</p><ul class="results"><li>Converged in 17 iterations.</li><li>Contact density 0.60579 vs. &beta;<em>P</em> = 0.60714 (0.22% at grid spacing 0.1d).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [30.0]
+  bin_width: [0.1]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;A&quot;
+    density: 0.305
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 500
+  damping: 0.5
+  mixing_max: 0.5
+  switch_tole: 0.01
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt</code></pre><p class="small"><a href="examples/files/hs-wall/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch05.png" alt="Schematic of the system: Hard spheres at a planar hard wall"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex05_hs_wall.png"><img loading="lazy" src="assets/img/examples/ex05_hs_wall.png" alt="Oscillating hard-sphere density profile near a wall"></a><figcaption>Layering of hard spheres near the wall, normalized by bulk density.</figcaption></figure></div></article>
+<article class="example" data-cat="hs"><div><span class="num">Example 07</span><h3 id="hs-density-sweep">Hard-sphere wall: density sweep and comparison with MD</h3><div class="meta"><span class="chip cat">Hard spheres</span><span class="chip">1D</span><span class="chip">mFMT</span><span class="chip">MD comparison</span></div><p>Bulk densities 0.305, 0.701 and 0.857 are each solved on four grids (0.2d to 0.025d). The contact error shrinks roughly quadratically with grid spacing. Profiles at the exact state points of Davidchack, Laird &amp; Roth are then compared with their published molecular-dynamics density profiles.</p><ul class="results"><li>Profile RMSE vs. MD over 0.5&ndash;5d: 0.05% (&rho;=0.305), 1.8% (0.701) and 8.6% (0.857) of bulk density.</li><li>The high-density difference persists under grid refinement and reflects the functional, consistent with the trend reported in the reference.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [30.0]
+  bin_width: [0.025]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;A&quot;
+    density: 0.305
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 5000
+  damping: 0.3
+  mixing_max: 0.3
+  switch_tole: 0.01
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt</code></pre><p class="small"><a href="examples/files/hs-density-sweep/input.yaml" download>Download input.yaml</a></p></details><p class="small muted">Reference: R. L. Davidchack, B. B. Laird, R. Roth, <em>Condens. Matter Phys.</em> 19, 23001 (2016); MD data from the University of Leicester Figshare record.</p></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch06.png" alt="Schematic of the system: Hard-sphere wall: density sweep and comparison with MD"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex06_md_overlay.png"><img loading="lazy" src="assets/img/examples/ex06_md_overlay.png" alt="SoftDFT and MD hard-sphere profiles at three densities"></a><figcaption>SoftDFT profiles overlaid on the published MD data.</figcaption></figure></div></article>
+<article class="example" data-cat="hs"><div><span class="num">Example 08</span><h3 id="cross-dimension-slit">Same slit in 1D, 2D and 3D</h3><div class="meta"><span class="chip cat">Hard spheres</span><span class="chip">1D</span><span class="chip">2D</span><span class="chip">3D</span></div><p>A hard-sphere fluid (&rho;<sub>b</sub>d<sup>3</sup> = 0.2) between walls 6d apart is solved as a 1D problem and again with one or two periodic lateral directions. Averaged over the lateral directions, the 2D and 3D profiles must match the 1D result.</p><ul class="results"><li>All residuals below 1.8&times;10<sup>&minus;8</sup>.</li><li>2D and 3D profiles differ from 1D by less than 4&times;10<sup>&minus;16</sup>.</li></ul><details><summary>input_1d.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [6.0]
+  bin_width: [0.25]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;A&quot;
+    density: 0.2
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.5
+  mixing_max: 0.5
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt</code></pre><p class="small"><a href="examples/files/cross-dimension-slit/input_1d.yaml" download>Download input_1d.yaml</a></p></details><details><summary>input_2d.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [4.0, 6.0]
+  bin_width: [0.5, 0.25]
+  external_field:
+    hard_walls:
+      dims: [2]
+species:
+  - sequence: &quot;A&quot;
+    density: 0.2
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.5
+  mixing_max: 0.5
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt</code></pre><p class="small"><a href="examples/files/cross-dimension-slit/input_2d.yaml" download>Download input_2d.yaml</a></p></details><details><summary>input_3d.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [4.0, 4.0, 6.0]
+  bin_width: [0.5, 0.5, 0.25]
+  external_field:
+    hard_walls:
+      dims: [3]
+species:
+  - sequence: &quot;A&quot;
+    density: 0.2
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.5
+  mixing_max: 0.5
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt</code></pre><p class="small"><a href="examples/files/cross-dimension-slit/input_3d.yaml" download>Download input_3d.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch07.png" alt="Schematic of the system: Same slit in 1D, 2D and 3D"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex07_cross_dimension.png"><img loading="lazy" src="assets/img/examples/ex07_cross_dimension.png" alt="1D, 2D and 3D hard-sphere slit profiles overlap"></a><figcaption>1D, 2D and 3D calculations give the same profile.</figcaption></figure></div></article>
+<article class="example" data-cat="polymer"><div><span class="num">Example 09</span><h3 id="neutral-brush">Neutral grafted polymer brush</h3><div class="meta"><span class="chip cat">Polymers & brushes</span><span class="chip">1D</span><span class="chip">TPT1</span><span class="chip">grafted</span></div><p>Five-bead chains grafted to the left wall (0.05 chains per d<sup>2</sup>) in a 15d slit with a dilute solvent, using ideal and TPT1-mFMT chain terms. A compact teaching example for the <code>fixed</code> species block.</p><ul class="results"><li>Residual 6.8&times;10<sup>&minus;8</sup>; brush height 2.43d (<code>brush_height.txt</code>).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [15.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;AAAAA&quot;
+    density: 0.0
+    fixed:
+      density: 0.05
+      segment: [1]
+      position: [&quot;left&quot;]
+  - sequence: &quot;S&quot;
+    density: 0.01
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  S:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.1
+  mixing_max: 0.1
+  tole: 1e-6
+model:
+  - ideal
+  - TPT1mfmt</code></pre><p class="small"><a href="examples/files/neutral-brush/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch08.png" alt="Schematic of the system: Neutral grafted polymer brush"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex08_neutral_brush.png"><img loading="lazy" src="assets/img/examples/ex08_neutral_brush.png" alt="Polymer bead and solvent density profiles in a brush"></a><figcaption>Polymer-bead and solvent density profiles.</figcaption></figure></div></article>
+<article class="example" data-cat="polymer"><div><span class="num">Example 10</span><h3 id="segment-conservation">Polymer segment conservation and grid refinement</h3><div class="meta"><span class="chip cat">Polymers & brushes</span><span class="chip">1D</span><span class="chip">grid convergence</span></div><p>Grafted chains of 2, 5 and 10 beads (0.02 chains per d<sup>2</sup>). Every segment's integrated amount should equal the grafting density. The five-bead chain is solved at grid spacings 0.2, 0.1 and 0.05 to show how the discretization error falls with refinement.</p><ul class="results"><li>Five-bead chain, maximum segment-amount error: 5.8% (0.2d), 2.8% (0.1d), 1.4% (0.05d).</li><li>Use a fine grid when quantitative segment profiles matter.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.05]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;AAAAA&quot;
+    density: 0.0
+    fixed:
+      density: 0.02
+      segment: [1]
+      position: [&quot;left&quot;]
+  - sequence: &quot;S&quot;
+    density: 0.01
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  S:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 600
+  damping: 0.05
+  mixing_max: 0.05
+  tole: 1e-7
+model:
+  - ideal
+  - TPT1mfmt</code></pre><p class="small"><a href="examples/files/segment-conservation/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch09.png" alt="Schematic of the system: Polymer segment conservation and grid refinement"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex09_segment_conservation.png"><img loading="lazy" src="assets/img/examples/ex09_segment_conservation.png" alt="Segment-amount error by segment for three grid spacings"></a><figcaption>Five-bead chain: the error in each segment's amount halves each time the grid spacing is halved.</figcaption></figure></div></article>
+<article class="example" data-cat="polymer"><div><span class="num">Example 11</span><h3 id="charge-regulating-brush">Charge-regulating weak polyacid brush</h3><div class="meta"><span class="chip cat">Polymers & brushes</span><span class="chip">1D</span><span class="chip">Ising DFT</span><span class="chip">pH</span></div><p>Eight-bead weak-acid chains (A &#8652; B<sup>&minus;</sup> + H<sup>+</sup>, p<em>K</em> 4.756) grafted at 0.05 chains per d<sup>2</sup>, at pH 7 with monovalent salt. Ising DFT solves the segment ionization together with the chain conformations, ion distributions and electrostatic potential.</p><ul class="results"><li>Residual 9.4&times;10<sup>&minus;8</sup>; mean ionized fraction 0.91.</li><li>Needed smaller mixing (<code>damping</code> = <code>mixing_max</code> = 0.05).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [15.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;AAAAAAAA&quot;
+    density: 0.0
+    fixed:
+      density: 0.05
+      segment: [1]
+      position: [&quot;left&quot;]
+  - sequence: &quot;c&quot;
+    density: 0.01
+    adjustable: true
+  - sequence: &quot;a&quot;
+    density: 0.01
+    adjustable: true
+  - sequence: &quot;Y&quot;
+    pSpecies: 7.0
+  - sequence: &quot;Z&quot;
+reactions:
+  - species: [&quot;A&quot;, &quot;Y&quot;, &quot;B&quot;]
+    coeffs: [-1, 1, 1]
+    pK: 4.756
+  - species: [&quot;Y&quot;, &quot;Z&quot;]
+    coeffs: [1, 1]
+    pK: 14.0
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.0
+    valence: -1.0
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+  Y:
+    diameter: 1.0
+    valence: 1.0
+  Z:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 1500
+  damping: 0.05
+  mixing_max: 0.05
+  tole: 1e-6
+model:
+  - ideal
+  - TPT1mfmt
+  - TPT1msa</code></pre><p class="small"><a href="examples/files/charge-regulating-brush/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch14.png" alt="Schematic of the system: Charge-regulating weak polyacid brush"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex14_regulating_brush.png"><img loading="lazy" src="assets/img/examples/ex14_regulating_brush.png" alt="Neutral and ionized segment and ion profiles in a weak polyacid brush"></a><figcaption>Neutral (A) and ionized (B) segments, counterions and coions.</figcaption></figure></div></article>
+<article class="example" data-cat="polymer"><div><span class="num">Example 12</span><h3 id="weak-brush-sweep">Weak polyacid brush: pH and salt sweep</h3><div class="meta"><span class="chip cat">Polymers & brushes</span><span class="chip">1D</span><span class="chip">Ising DFT</span><span class="chip">parameter sweep</span></div><p>The brush above at pH 5 and 7 and two salt concentrations. Ionization rises with pH and with salt (salt screens the electrostatic penalty for charging); the brush swells with pH and shrinks with added salt.</p><ul class="results"><li>pH 7, salt 0.01: ionized fraction 0.911, height 4.60d.</li><li>pH 7, salt 0.05: ionized fraction 0.974, height 4.26d.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [15.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;AAAAAAAA&quot;
+    density: 0.0
+    fixed:
+      density: 0.05
+      segment: [1]
+      position: [&quot;left&quot;]
+  - sequence: &quot;c&quot;
+    density: 0.01
+    adjustable: true
+  - sequence: &quot;a&quot;
+    density: 0.01
+    adjustable: true
+  - sequence: &quot;Y&quot;
+    pSpecies: 7.0
+  - sequence: &quot;Z&quot;
+reactions:
+  - species: [&quot;A&quot;, &quot;Y&quot;, &quot;B&quot;]
+    coeffs: [-1, 1, 1]
+    pK: 4.756
+  - species: [&quot;Y&quot;, &quot;Z&quot;]
+    coeffs: [1, 1]
+    pK: 14.0
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.0
+    valence: -1.0
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+  Y:
+    diameter: 1.0
+    valence: 1.0
+  Z:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 1500
+  damping: 0.05
+  mixing_max: 0.05
+  tole: 1e-6
+model:
+  - ideal
+  - TPT1mfmt
+  - TPT1msa</code></pre><p class="small"><a href="examples/files/weak-brush-sweep/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch15.png" alt="Schematic of the system: Weak polyacid brush: pH and salt sweep"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex15_ph_salt_sweep.png"><img loading="lazy" src="assets/img/examples/ex15_ph_salt_sweep.png" alt="Mean ionized fraction vs pH for two salt concentrations"></a><figcaption>Mean ionized fraction at two salt concentrations.</figcaption></figure></div></article>
+<article class="example" data-cat="elec"><div><span class="num">Example 13</span><h3 id="charged-slit">1:1 electrolyte between oppositely charged walls</h3><div class="meta"><span class="chip cat">Electrolytes</span><span class="chip">1D</span><span class="chip">MSA</span><span class="chip">Poisson</span></div><p>Equal-size monovalent ions (&rho;<sub>b</sub>d<sup>3</sup> = 0.02 each) in a 12d slit with wall charges &minus;0.01 and +0.01 e/d<sup>2</sup>, using ideal, mFMT and MSA terms plus the FFT Poisson solver. Checks: residual, left/right antisymmetry, neutrality and counterion enrichment.</p><ul class="results"><li>Residual 4.9&times;10<sup>&minus;8</sup>; net mobile charge 3&times;10<sup>&minus;15</sup>.</li><li>Counterion/coion ratio at contact: 1.52.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charged_walls:
+      dims: [1]
+      charge: [-0.01, 0.01]
+species:
+  - sequence: &quot;c&quot;
+    density: 0.02
+  - sequence: &quot;a&quot;
+    density: 0.02
+monomers:
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.1
+  mixing_max: 0.1
+  tole: 1e-6
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/charged-slit/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch10.png" alt="Schematic of the system: 1:1 electrolyte between oppositely charged walls"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex10_charged_slit.png"><img loading="lazy" src="assets/img/examples/ex10_charged_slit.png" alt="Cation and anion density and potential profiles in a charged slit"></a><figcaption>Ion densities (left axis) and reduced potential (right axis).</figcaption></figure></div></article>
+<article class="example" data-cat="elec"><div><span class="num">Example 14</span><h3 id="charge-reversal">Charge-reversal symmetry</h3><div class="meta"><span class="chip cat">Electrolytes</span><span class="chip">1D</span><span class="chip">symmetry</span></div><p>Two equally charged walls (&minus;0.005 e/d<sup>2</sup>) and the same system with both charges reversed. Cation and anion profiles must swap exactly and the potential must change sign; fluid plus wall charge must be neutral.</p><ul class="results"><li>Profile-reversal error 1.9&times;10<sup>&minus;13</sup>; potential-reversal error 3.6&times;10<sup>&minus;12</sup>.</li><li>Charge-balance error 4.3&times;10<sup>&minus;9</sup> (with trapezoidal weights).</li></ul><details><summary>input_negative.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charged_walls:
+      dims: [1]
+      charge: [-0.005, -0.005]
+species:
+  - sequence: &quot;c&quot;
+    density: 0.02
+  - sequence: &quot;a&quot;
+    density: 0.02
+monomers:
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 600
+  damping: 0.05
+  mixing_max: 0.05
+  tole: 1e-8
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/charge-reversal/input_negative.yaml" download>Download input_negative.yaml</a></p></details><details><summary>input_positive.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charged_walls:
+      dims: [1]
+      charge: [0.005, 0.005]
+species:
+  - sequence: &quot;c&quot;
+    density: 0.02
+  - sequence: &quot;a&quot;
+    density: 0.02
+monomers:
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 600
+  damping: 0.05
+  mixing_max: 0.05
+  tole: 1e-8
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/charge-reversal/input_positive.yaml" download>Download input_positive.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch11.png" alt="Schematic of the system: Charge-reversal symmetry"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex11_charge_reversal.png"><img loading="lazy" src="assets/img/examples/ex11_charge_reversal.png" alt="Cation and anion profiles swap when wall charges reverse"></a><figcaption>Solid: negative walls. Dashed: reversed walls. The curves coincide pairwise.</figcaption></figure></div></article>
+<article class="example" data-cat="elec"><div><span class="num">Example 15</span><h3 id="asymmetric-electrolyte">Size- and valence-asymmetric 2:1 electrolyte</h3><div class="meta"><span class="chip cat">Electrolytes</span><span class="chip">1D</span><span class="chip">2:1</span><span class="chip">size asymmetry</span></div><p>Divalent cations (diameter 1.2d) and monovalent anions (0.8d) in a 16d slit with walls at &minus;0.02 and +0.02 e/d<sup>2</sup>, compared with an uncharged-wall control.</p><ul class="results"><li>First accessible cation bin at the negative wall: 1.78&times; bulk; anion at the positive wall: 1.26&times; bulk.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [16.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charged_walls:
+      dims: [1]
+      charge: [-0.02, 0.02]
+species:
+  - sequence: &quot;c&quot;
+    density: 0.01
+  - sequence: &quot;a&quot;
+    density: 0.02
+monomers:
+  c:
+    diameter: 1.2
+    valence: 2.0
+  a:
+    diameter: 0.8
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 800
+  damping: 0.05
+  mixing_max: 0.05
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/asymmetric-electrolyte/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch12.png" alt="Schematic of the system: Size- and valence-asymmetric 2:1 electrolyte"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex12_asymmetric_electrolyte.png"><img loading="lazy" src="assets/img/examples/ex12_asymmetric_electrolyte.png" alt="Density profiles of divalent cations and monovalent anions"></a><figcaption>Charged walls (solid) vs. neutral control (dotted).</figcaption></figure></div></article>
+<article class="example" data-cat="elec"><div><span class="num">Example 16</span><h3 id="square-well-adsorption">Selective adsorption with square-well attraction</h3><div class="meta"><span class="chip cat">Electrolytes</span><span class="chip">1D</span><span class="chip">square well</span><span class="chip">selective</span></div><p>Two neutral species share a slit; only A feels a square-well attraction to the wall, while both keep A&ndash;A and A&ndash;B square-well pair interactions. Shows the <code>sw_walls</code> field and the <code>pairs</code> block.</p><ul class="results"><li>Contact density of A is 7.2&times; its value in the non-attractive control.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    sw_walls:
+      dims: [1]
+      monomers:
+        A:
+          energy: [[-2.0, 0.0]]
+          lambda: [[1.5, 1.5]]
+species:
+  - sequence: &quot;A&quot;
+    density: 0.05
+  - sequence: &quot;B&quot;
+    density: 0.05
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.0
+    valence: 0.0
+pairs:
+  square_well:
+    A, A:
+      energy: 0.5
+      lambda: 1.5
+    A, B:
+      energy: 0.2
+      lambda: 1.5
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 500
+  damping: 0.2
+  mixing_max: 0.2
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt
+  - sw</code></pre><p class="small"><a href="examples/files/square-well-adsorption/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch17.png" alt="Schematic of the system: Selective adsorption with square-well attraction"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex17_square_well.png"><img loading="lazy" src="assets/img/examples/ex17_square_well.png" alt="Density of species A and B with and without wall attraction"></a><figcaption>Attractive wall (solid) vs. control (dotted).</figcaption></figure></div></article>
+<article class="example" data-cat="reg"><div><span class="num">Example 17</span><h3 id="charge-regulated-slit">Charge-regulated walls</h3><div class="meta"><span class="chip cat">Charge regulation</span><span class="chip">1D</span><span class="chip">FFT Poisson</span><span class="chip">pH</span></div><p>Each wall carries ionizable sites (Γ = 0.02 e/d<sup>2</sup>): acid sites on the left and base sites on the right, both with p<em>K</em><sub>a</sub> 7. The site charge follows log[&alpha;/(1&minus;&alpha;)] = ln10&middot;(pH &minus; p<em>K</em><sub>a</sub>) + &beta;e&psi;<sub>wall</sub> (sign reversed for bases) and is solved self-consistently with the ion densities and the FFT Poisson solution. The reservoir pH is taken from the proton species <code>Y</code>.</p><ul class="results"><li>Wall charges move from &plusmn;0.0100 (zero-potential guess) to &plusmn;0.00879 e/d<sup>2</sup>.</li><li>Charge-law residual 3&times;10<sup>&minus;10</sup>; full DFT residual 1.2&times;10<sup>&minus;7</sup>.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charge_regulated_walls:
+      dims: [1]
+      site_density: [0.02, 0.02] # maximum magnitude, e / l_sc^2
+      kind: [acid, base]         # left negative, right positive
+      pKa: [7.0, 7.0]           # base uses conjugate-acid pKa
+species:
+  - sequence: &quot;c&quot;
+    density: 0.02
+  - sequence: &quot;a&quot;
+    density: 0.02
+    adjustable: true           # absorbs the small proton charge in the bulk
+  - sequence: &quot;Y&quot;             # proton reservoir; its pSpecies supplies the wall pH
+    pSpecies: 7.0
+monomers:
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+  Y:
+    diameter: 1.0
+    valence: 1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.1
+  mixing_max: 0.1
+  tole: 1e-6
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/charge-regulated-slit/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure><a href="assets/img/examples/excr_regulated_slit.png"><img loading="lazy" src="assets/img/examples/excr_regulated_slit.png" alt="Cation, anion and potential profiles between an acid wall and a base wall"></a><figcaption>Ion densities (left axis) and reduced potential (right axis). The protons, at about 10<sup>&minus;8</sup>, are too dilute to show.</figcaption></figure></div></article>
+<article class="example" data-cat="reg"><div><span class="num">Example 18</span><h3 id="mixed-fixed-regulated">Fixed-charge wall facing a charge-regulated wall</h3><div class="meta"><span class="chip cat">Charge regulation</span><span class="chip">1D</span><span class="chip">mixed walls</span></div><p><code>charged_walls</code> and <code>charge_regulated_walls</code> can be combined; their charges add on each wall. Here the left wall has a fixed charge of &minus;0.01 and the right wall has regulated base sites.</p><ul class="results"><li>Fixed wall stays at &minus;0.010; the regulated wall converges to +0.00879 e/d<sup>2</sup>.</li><li>&minus;0.010 is what the acid wall of the previous example would carry with no regulation (half its sites charged at pH = p<em>K</em><sub>a</sub>). Comparing the two left walls isolates the regulation effect: the wall potential weakens from &minus;0.274 to &minus;0.244 and the counterion contact density drops from 0.0248 to 0.0242.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charged_walls:
+      dims: [1]
+      charge: [-0.01, 0.0]
+    charge_regulated_walls:
+      dims: [1]
+      site_density: [0.0, 0.02]
+      kind: [acid, base]
+      pKa: [7.0, 7.0]
+      pH: 7.0
+species:
+  - sequence: &quot;c&quot;
+    density: 0.02
+  - sequence: &quot;a&quot;
+    density: 0.02
+monomers:
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.1
+  mixing_max: 0.1
+  tole: 1e-6
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/mixed-fixed-regulated/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure><a href="assets/img/examples/excr_mixed_walls.png"><img loading="lazy" src="assets/img/examples/excr_mixed_walls.png" alt="Ion densities and potential near a fixed-charge wall compared with a charge-regulated acid wall"></a><figcaption>Near the left wall: fixed charge (solid) vs. regulated acid sites (dashed). The negative potential holds protons at the surface, suppresses dissociation and weakens the double layer.</figcaption></figure></div></article>
+<article class="example" data-cat="lit"><div><span class="num">Example 19</span><h3 id="primitive-electrolyte-edl">Electric double layer: comparison with Monte Carlo</h3><div class="meta"><span class="chip cat">Literature benchmarks</span><span class="chip">1D</span><span class="chip">MC comparison</span><span class="chip">physical units</span></div><p>A 0.1 M 1:1 primitive-model electrolyte (3 &Aring; ions) between electrodes at &mp;0.02 C/m<sup>2</sup>, set up in physical units with <code>reduced_units.l_sc: 0.3</code> nm. SoftDFT (mFMT + MSA) is compared directly with the published raw Monte Carlo profiles.</p><ul class="results"><li>Cation RMSE 0.0028 M and anion RMSE 0.0014 M over 1.6&ndash;30 &Aring;.</li><li>Wall potential relative to midplane: &minus;1.189 kT/e (SoftDFT) vs. &minus;1.202 kT/e (MC).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+reduced_units:
+  l_sc: 0.3
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [78.83333333333333]
+  bin_width: [0.08333333333333333]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charged_walls:
+      dims: [1]
+      charge: [-0.011234716334029372, 0.011234716334029372]
+species:
+  - sequence: &quot;c&quot;
+    density: 0.0016259780052
+  - sequence: &quot;a&quot;
+    density: 0.0016259780052
+monomers:
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.5
+numerical:
+  max_iters: 5000
+  damping: 0.01
+  mixing_max: 0.01
+  switch_tole: 0.1
+  tole: 1e-8
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/primitive-electrolyte-edl/input.yaml" download>Download input.yaml</a></p></details><p class="small muted">Reference: M. Valiskó, T. Kristóf, D. Gillespie, D. Boda, <em>J. Chem. Phys.</em> 148, 024701 (2018), doi:10.1063/1.5022036.</p></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch22.png" alt="Schematic of the system: Electric double layer: comparison with Monte Carlo"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex22_mc_overlay.png"><img loading="lazy" src="assets/img/examples/ex22_mc_overlay.png" alt="SoftDFT ion and potential profiles overlaid on Monte Carlo data"></a><figcaption>Lines: SoftDFT. Points: Monte Carlo.</figcaption></figure></div></article>
+<article class="example" data-cat="lit"><div><span class="num">Example 20</span><h3 id="weak-brush-published">Weak polyacid brush at published conditions</h3><div class="meta"><span class="chip cat">Literature benchmarks</span><span class="chip">1D</span><span class="chip">Ising DFT</span><span class="chip">physical units</span></div><p>25-segment weak-acid chains (bead diameter 0.355 nm, p<em>K</em> 4.0) grafted at 0.79 chains/nm<sup>2</sup> in 5 mM NaCl, matching the conditions of Gallegos <em>et&nbsp;al.</em> (2026). The input shows how physical concentrations and grafting densities are converted to reduced units.</p><ul class="results"><li>pH 2.0 profiles converge with grid refinement beyond ~0.8 nm.</li><li>pH 6.0 mean ionization 0.230&ndash;0.233, within the range read from the published curve (about 0.21&ndash;0.24).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+reduced_units:
+  l_sc: 0.355
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [40.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: &quot;AAAAAAAAAAAAAAAAAAAAAAAAA&quot;
+    density: 0.0
+    fixed:
+      density: 0.09955975
+      segment: [1]
+      position: [&quot;left&quot;]
+  - sequence: &quot;c&quot;
+    density: 0.000134711901347
+    adjustable: true
+  - sequence: &quot;a&quot;
+    density: 0.000134711901347
+    adjustable: true
+  - sequence: &quot;Y&quot;
+    pSpecies: 6.0
+  - sequence: &quot;Z&quot;
+reactions:
+  - species: [&quot;A&quot;, &quot;Y&quot;, &quot;B&quot;]
+    coeffs: [-1, 1, 1]
+    pK: 4.0
+  - species: [&quot;Y&quot;, &quot;Z&quot;]
+    coeffs: [1, 1]
+    pK: 14.0
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.0
+    valence: -1.0
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+  Y:
+    diameter: 1.0
+    valence: 1.0
+  Z:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 5000
+  damping: 0.01
+  mixing_max: 0.01
+  switch_tole: 0.1
+  tole: 1e-8
+model:
+  - ideal
+  - TPT1mfmt
+  - TPT1msa</code></pre><p class="small"><a href="examples/files/weak-brush-published/input.yaml" download>Download input.yaml</a></p></details><p class="small muted">Reference: A. Gallegos, R. Lunkad, M. Müller, J. Wu, <em>J. Phys. Chem. B</em> 130, 4041 (2026), doi:10.1021/acs.jpcb.6c00544.</p></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch16.png" alt="Schematic of the system: Weak polyacid brush at published conditions"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex16_grid_profiles.png"><img loading="lazy" src="assets/img/examples/ex16_grid_profiles.png" alt="Segment concentration profiles of a weak polyacid brush at three grid spacings"></a><figcaption>Segment concentration vs. distance at pH 2.0 on three grids.</figcaption></figure></div></article>
+</div>
+</main>
+<footer class="sitefoot">
+  <div class="wrap">
+    <div>
+      <h4>SoftDFT</h4>
+      <p>Open-source classical density functional theory for complex and confined fluids,
+      developed in the Gallegos group, Department of Chemical &amp; Materials Engineering,
+      New Mexico State University, Las Cruces, NM.</p>
+      <p class="small">This project is supported by the U.S. National Science Foundation.
+      Any opinions, findings, and conclusions expressed here are those of the authors and do
+      not necessarily reflect the views of the NSF.</p>
+      <p class="small">&copy; 2026 SoftDFT developers. Code released under the license in the
+      <a href="https://github.com/gallegos-group/SoftDFT">source repository</a>.</p>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="https://github.com/gallegos-group/SoftDFT">Source code</a></li>
+        <li><a href="https://github.com/gallegos-group/SoftDFT/issues">Report an issue</a></li>
+        <li><a href="publications.html#cite">How to cite</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+<script>
+document.querySelectorAll('.filters button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var f = b.dataset.f;
+    document.querySelectorAll('.filters button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+    document.querySelectorAll('article.example').forEach(function (a) {
+      a.hidden = !(f === 'all' || a.dataset.cat === f);
+    });
+  });
+});
+</script>
+</body>
+</html>

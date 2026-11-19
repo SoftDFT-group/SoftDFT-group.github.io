@@ -1,0 +1,35 @@
+procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [15.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: "AAAAA"
+    density: 0.0
+    fixed:
+      density: 0.05
+      segment: [1]
+      position: ["left"]
+  - sequence: "S"
+    density: 0.01
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  S:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.1
+  mixing_max: 0.1
+  tole: 1e-6
+model:
+  - ideal
+  - TPT1mfmt

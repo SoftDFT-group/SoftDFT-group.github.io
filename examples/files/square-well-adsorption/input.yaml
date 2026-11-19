@@ -1,0 +1,46 @@
+procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    sw_walls:
+      dims: [1]
+      monomers:
+        A:
+          energy: [[-2.0, 0.0]]
+          lambda: [[1.5, 1.5]]
+species:
+  - sequence: "A"
+    density: 0.05
+  - sequence: "B"
+    density: 0.05
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.0
+    valence: 0.0
+pairs:
+  square_well:
+    A, A:
+      energy: 0.5
+      lambda: 1.5
+    A, B:
+      energy: 0.2
+      lambda: 1.5
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 500
+  damping: 0.2
+  mixing_max: 0.2
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt
+  - sw

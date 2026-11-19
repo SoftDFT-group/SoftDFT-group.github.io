@@ -1,0 +1,31 @@
+procedure: iLST
+species:
+  - sequence: "A"
+    density: 0.03
+  - sequence: "B"
+    density: 0.06
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.2
+    valence: 0.0
+pairs:
+  square_well:
+    A, A:
+      energy: 0.5
+      lambda: 1.5
+    A, B:
+      energy: 0.2
+      lambda: 1.5
+    B, B:
+      energy: 0.3
+      lambda: 1.5
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+model:
+  - ideal
+  - mfmt
+  - sw

@@ -1,0 +1,98 @@
+<!-- Features | What SoftDFT can model | Capabilities of the current release, taken from the source code. Items under “In development” are planned and not yet available. | Features of SoftDFT: free-energy functionals, reactions and charge regulation, geometries, external fields, solvers and outputs. -->
+<h2>Architecture</h2>
+<p>SoftDFT is written in Julia and organized as four modules that run in sequence. Each one can be extended
+without editing the others.</p>
+<div class="pipeline">
+  <span>molecular_system</span><i>&rarr;</i><span>iLST</span><i>&rarr;</i><span>geometry</span><i>&rarr;</i><span>iDFT</span>
+</div>
+<div class="grid c2">
+  <div class="card"><h3><code>molecular_system</code></h3><p>Parses species, chain sequences and topology,
+  monomer properties, reactions and system constants (temperature, dielectric constant, length scale,
+  Bjerrum length).</p></div>
+  <div class="card"><h3><code>iLST</code>: bulk state</h3><p>Ising liquid-state theory for the homogeneous
+  reservoir: bulk densities, charge balance, reaction equilibria, chemical potentials and pressure.</p></div>
+  <div class="card"><h3><code>geometry</code></h3><p>Builds the Cartesian grid (1D, 2D or 3D) and the
+  external fields acting on each monomer type.</p></div>
+  <div class="card"><h3><code>iDFT</code>: inhomogeneous solve</h3><p>Sets up density fields, Fourier
+  caches, functionals and the Coulomb solver, then solves the Euler&ndash;Lagrange equations and writes the
+  analysis files.</p></div>
+</div>
+
+<h2 id="functionals">Free-energy functionals</h2>
+<p>Excess free-energy terms are registered by name and selected in the <code>model</code> list of the input.
+The same names are used for the bulk (iLST) and inhomogeneous (iDFT) parts.</p>
+<div class="tablewrap"><table>
+  <tr><th>Key</th><th>Contribution</th></tr>
+  <tr><td><code>ideal</code></td><td>Ideal-gas (and ideal-chain) free energy</td></tr>
+  <tr><td><code>mfmt</code></td><td>Modified fundamental measure theory for hard-sphere excluded volume (mixtures of arbitrary diameters)</td></tr>
+  <tr><td><code>TPT1mfmt</code></td><td>mFMT plus first-order thermodynamic perturbation theory for chain connectivity</td></tr>
+  <tr><td><code>msa</code></td><td>Mean-spherical-approximation electrostatic correlations</td></tr>
+  <tr><td><code>TPT1msa</code></td><td>MSA correlations with TPT1 chain contribution</td></tr>
+  <tr><td><code>sw</code></td><td>Square-well short-range attraction between monomer pairs (defined in <code>pairs</code>)</td></tr>
+</table></div>
+<p>Long-range electrostatics are handled separately by a Coulomb solver. It is set up automatically when the
+system contains charges, so <code>coul</code> is not listed under <code>model</code>.</p>
+
+<h2 id="chemistry">Molecules, reactions and charge regulation</h2>
+<ul>
+  <li><strong>Arbitrary sequences.</strong> Each species is a string of monomer labels (e.g.
+  <code>"AAAAAAAA"</code>, <code>"c"</code>), modelled as freely jointed tangent-bead chains or single beads.</li>
+  <li><strong>Grafted chains.</strong> A <code>fixed</code> block tethers a chosen segment to a wall at a given
+  grafting density, for polymer brushes.</li>
+  <li><strong>Reactions.</strong> Any number of reactions with stoichiometric coefficients and p<em>K</em>
+  values. Species may carry several internal states: the Ising variable of iDFT.</li>
+  <li><strong>Reservoir pH and p-values.</strong> <code>pSpecies</code> fixes a species' activity (e.g. the
+  proton species <code>Y</code> sets the pH). <code>adjustable</code> species are tuned to keep the bulk
+  electroneutral.</li>
+  <li><strong>Charge-regulated surfaces.</strong> Walls carrying acidic or basic sites whose charge responds to
+  the local electrostatic potential. The wall charge is mixed with the density fields and solved
+  self-consistently.</li>
+</ul>
+
+<h2 id="geometry">Geometry and external fields</h2>
+<p>Cartesian grids in one, two or three dimensions. Box lengths and bin widths are set per dimension; lateral
+directions are periodic. External fields act per dimension on the two bounding walls.</p>
+<div class="tablewrap"><table>
+  <tr><th>Field</th><th>Purpose</th></tr>
+  <tr><td><code>hard_walls</code></td><td>Impenetrable planar walls</td></tr>
+  <tr><td><code>charged_walls</code></td><td>Fixed uniform surface charge on each wall</td></tr>
+  <tr><td><code>charge_regulated_walls</code></td><td>Ionizable acid/base surface sites with p<em>K</em><sub>a</sub> and site density</td></tr>
+  <tr><td><code>sw_walls</code></td><td>Square-well wall attraction, set per monomer type</td></tr>
+  <tr><td><code>pointcharge_walls</code></td><td>Discrete point charges on a wall</td></tr>
+  <tr><td><code>input_external</code></td><td>Arbitrary user-supplied potential read from a file (1D&ndash;3D)</td></tr>
+</table></div>
+
+<h2 id="electrostatics">Electrostatics</h2>
+<ul>
+  <li><strong>FFT Poisson solver</strong> (default): the potential from mobile ions and wall charges, with a
+  neutrality (Donnan) shift.</li>
+  <li><strong>Half-space solver</strong> (optional, 1D, <code>electrostatics: {solver: half_space}</code>): a
+  charged wall facing a semi-infinite reservoir, with a field condition at the wall and zero potential far
+  away.</li>
+</ul>
+
+<h2 id="solvers">Numerical solvers</h2>
+<ul>
+  <li>Picard mixing with automatic switch to <strong>Anderson mixing</strong> below a residual threshold.</li>
+  <li><strong>Pseudo-arclength continuation</strong> for tracing solutions through parameter changes,
+  including grafting density.</li>
+  <li>Routines for adjusting pH and wall separation along a series of calculations.</li>
+  <li>Damping, mixing limit, Anderson depth, tolerance and iteration cap are all set in the input.</li>
+</ul>
+
+<h2 id="outputs">Outputs</h2>
+<p>Each run writes plain-text results to the working directory: density profiles by monomer
+(<code>rho_beads_K.txt</code>) and segment (<code>rho_segments_*.txt</code>), the electrostatic potential
+(<code>MEP.txt</code>), grand potential, contact-value-theorem check (<code>cvt.txt</code>), brush height, and
+state-fraction and degree-of-dissociation profiles for reactive chains.</p>
+
+<h2 id="roadmap">In development</h2>
+<div class="note">These capabilities are planned and are <strong>not</strong> in the current code.</div>
+<ul>
+  <li>A unified <code>CoordSystem</code> layer so the same solver runs on Cartesian, cylindrical and spherical geometries.</li>
+  <li>A documented template for adding new functionals without touching solver internals.</li>
+  <li>An automated benchmark and regression suite run under continuous integration.</li>
+  <li>Parameter-scan, phase-equilibrium and transition-path workflows.</li>
+  <li>Time-dependent (dynamic) DFT and coupling to transport.</li>
+  <li>GPU execution and versioned, DOI-tagged releases.</li>
+</ul>

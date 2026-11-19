@@ -1,0 +1,27 @@
+procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [30.0]
+  bin_width: [0.1]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: "A"
+    density: 0.305
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 500
+  damping: 0.5
+  mixing_max: 0.5
+  switch_tole: 0.01
+  tole: 1e-7
+model:
+  - ideal
+  - mfmt

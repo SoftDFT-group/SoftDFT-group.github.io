@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install — SoftDFT</title>
+<meta name="description" content="How to download and install SoftDFT: Julia requirements, package dependencies, cloning the repository and running a first calculation.">
+<link rel="canonical" href="https://softdft-group.github.io/install.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>
+  <div class="nmsu-band">
+    <div class="wrap">
+      <div class="unit">
+        <strong><a href="https://chme.nmsu.edu/">Chemical &amp; Materials Engineering</a></strong>
+        <a href="https://www.nmsu.edu/">New Mexico State University</a>
+      </div>
+    </div>
+  </div>
+  <div class="sitebar">
+    <div class="wrap">
+      <a class="brand" href="index.html">Soft<span>DFT</span></a>
+      <ul class="nav" id="nav">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="features.html">Features</a></li>
+        <li><a href="install.html" aria-current="page">Install</a></li>
+        <li><a href="docs.html">User Guide</a></li>
+        <li><a href="examples.html">Examples</a></li>
+        <li><a href="publications.html">Publications</a></li>
+        <li><a href="people.html">People</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+<section class="pagehead"><div class="wrap"><div class="eyebrow">Install</div><h1>Download and install</h1><p>SoftDFT is a set of Julia source files. Install Julia, add a handful of registered packages, clone the repository, and run an input file.</p></div></section>
+<main id="main">
+<div class="wrap">
+<div class="docs">
+<nav class="toc" aria-label="On this page">
+  <strong>On this page</strong>
+  <ul>
+    <li><a href="#requirements">Requirements</a></li>
+    <li><a href="#julia">1. Install Julia</a></li>
+    <li><a href="#get">2. Get the code</a></li>
+    <li><a href="#deps">3. Add dependencies</a></li>
+    <li><a href="#run">4. Run a test</a></li>
+    <li><a href="#vscode">VS Code</a></li>
+    <li><a href="#layout">Repository layout</a></li>
+  </ul>
+</nav>
+<div>
+<h2 id="requirements">Requirements</h2>
+<ul>
+  <li><strong>Julia 1.9 or later.</strong> Recent development and testing used Julia 1.11 and 1.13.</li>
+  <li>Windows, macOS or Linux. A laptop is enough for 1D calculations; 3D grids need more memory.</li>
+  <li>Git, to clone the repository (or download the ZIP from GitHub).</li>
+  <li>Optional: Python with NumPy and Matplotlib for the plotting scripts that ship with some examples.</li>
+</ul>
+
+<h2 id="julia">1. Install Julia</h2>
+<p>The recommended installer is <a href="https://julialang.org/downloads/">juliaup</a>, which manages Julia versions:</p>
+<pre><code><span class="c"># Windows (PowerShell)</span>
+winget install --name Julia --id 9NJNWW8PVKMN -e -s msstore
+
+<span class="c"># macOS / Linux</span>
+curl -fsSL https://install.julialang.org | sh</code></pre>
+
+<h2 id="get">2. Get the code</h2>
+<pre><code>git clone https://github.com/gallegos-group/SoftDFT.git
+cd SoftDFT</code></pre>
+<p>SoftDFT is currently used directly from source (it is not yet a registered Julia package), so the folder
+you clone is the installation.</p>
+
+<h2 id="deps">3. Add dependencies</h2>
+<p>SoftDFT depends on a few registered Julia packages. The standard libraries <code>LinearAlgebra</code>,
+<code>Printf</code> and <code>DelimitedFiles</code> ship with Julia. Install the rest once, into a named environment:</p>
+<pre><code>julia --project=@softdft -e 'using Pkg; Pkg.add(["YAML", "FFTW", "LazyArrays", "LoopVectorization", "IterativeSolvers", "IterTools", "UnPack"])'</code></pre>
+<p class="small muted">On Windows PowerShell, swap the quotes: <code>-e "using Pkg; Pkg.add([\"YAML\", ...])"</code>,
+or start <code>julia --project=@softdft</code> and type the command at the <code>julia&gt;</code> prompt.</p>
+
+<h2 id="run">4. Run a first calculation</h2>
+<p>Create a working folder with an <code>input.yaml</code> (for example the
+<a href="examples.html#charged-slit">charged-slit input</a>), then from that folder:</p>
+<pre><code>julia --project=@softdft</code></pre>
+<pre><code>julia&gt; include("/path/to/SoftDFT/src/iDFT/iDFT.jl")
+julia&gt; system = iDFT("input.yaml")</code></pre>
+<p>The first call compiles the code and can take about a minute; later runs in the same session are fast.
+Results are written to the current folder (see <a href="docs.html#outputs">Outputs</a>). For a bulk-only
+calculation, include <code>src/iLST/iLST.jl</code> and call <code>iLST("input.yaml")</code>.</p>
+<div class="note">Check convergence after every run: the solver stops at <code>max_iters</code> even if the
+tolerance was not reached. See <a href="docs.html#convergence">Checking convergence</a>.</div>
+
+<h2 id="vscode">Using VS Code</h2>
+<p>Install the <a href="https://www.julia-vscode.org/">Julia extension</a>, open your working folder, start a
+Julia REPL from the command palette, and run the two lines above. Use <code>cd("folder")</code> in the REPL to
+change where output files are written.</p>
+
+<h2 id="layout">Repository layout</h2>
+<pre><code>src/
+  molecular_system/   species, sequences, reactions, constants
+  iLST/               bulk (homogeneous) Ising liquid-state theory
+  geometry/           Cartesian grids and external fields
+  iDFT/               inhomogeneous DFT: functionals, Coulomb, solver, analysis
+  NonlinearSolvers/   Picard, Anderson mixing, continuation
+routines/             helper scripts (pH and wall-separation series)
+input.yaml            sample input</code></pre>
+</div>
+</div>
+
+</div>
+</main>
+<footer class="sitefoot">
+  <div class="wrap">
+    <div>
+      <h4>SoftDFT</h4>
+      <p>Open-source classical density functional theory for complex and confined fluids,
+      developed in the Gallegos group, Department of Chemical &amp; Materials Engineering,
+      New Mexico State University, Las Cruces, NM.</p>
+      <p class="small">This project is supported by the U.S. National Science Foundation.
+      Any opinions, findings, and conclusions expressed here are those of the authors and do
+      not necessarily reflect the views of the NSF.</p>
+      <p class="small">&copy; 2026 SoftDFT developers. Code released under the license in the
+      <a href="https://github.com/gallegos-group/SoftDFT">source repository</a>.</p>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="https://github.com/gallegos-group/SoftDFT">Source code</a></li>
+        <li><a href="https://github.com/gallegos-group/SoftDFT/issues">Report an issue</a></li>
+        <li><a href="publications.html#cite">How to cite</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

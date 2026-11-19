@@ -1,0 +1,65 @@
+procedure: iDFT
+reduced_units:
+  l_sc: 0.355
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [40.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+species:
+  - sequence: "AAAAAAAAAAAAAAAAAAAAAAAAA"
+    density: 0.0
+    fixed:
+      density: 0.09955975
+      segment: [1]
+      position: ["left"]
+  - sequence: "c"
+    density: 0.000134711901347
+    adjustable: true
+  - sequence: "a"
+    density: 0.000134711901347
+    adjustable: true
+  - sequence: "Y"
+    pSpecies: 6.0
+  - sequence: "Z"
+reactions:
+  - species: ["A", "Y", "B"]
+    coeffs: [-1, 1, 1]
+    pK: 4.0
+  - species: ["Y", "Z"]
+    coeffs: [1, 1]
+    pK: 14.0
+monomers:
+  A:
+    diameter: 1.0
+    valence: 0.0
+  B:
+    diameter: 1.0
+    valence: -1.0
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+  Y:
+    diameter: 1.0
+    valence: 1.0
+  Z:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 5000
+  damping: 0.01
+  mixing_max: 0.01
+  switch_tole: 0.1
+  tole: 1e-8
+model:
+  - ideal
+  - TPT1mfmt
+  - TPT1msa

@@ -1,0 +1,220 @@
+<!-- Documentation | User Guide | How to describe a system in an input file, run it, read the results and check convergence. | SoftDFT user guide: input file reference (geometry, species, reactions, monomers, functionals, numerical settings), units, outputs and convergence checks. -->
+<div class="docs">
+<nav class="toc" aria-label="On this page">
+  <strong>User Guide</strong>
+  <ul>
+    <li><a href="#workflow">Workflow</a></li>
+    <li><a href="#units">Units</a></li>
+    <li><a href="#procedure">procedure</a></li>
+    <li><a href="#geometry">geometry</a></li>
+    <li><a href="#fields">external_field</a></li>
+    <li><a href="#species">species</a></li>
+    <li><a href="#reactions">reactions</a></li>
+    <li><a href="#monomers">monomers</a></li>
+    <li><a href="#pairs">pairs</a></li>
+    <li><a href="#constraints">constraints</a></li>
+    <li><a href="#model">model</a></li>
+    <li><a href="#electrostatics">electrostatics</a></li>
+    <li><a href="#numerical">numerical</a></li>
+    <li><a href="#outputs">Outputs</a></li>
+    <li><a href="#convergence">Checking convergence</a></li>
+    <li><a href="#extending">Extending SoftDFT</a></li>
+  </ul>
+</nav>
+<div>
+<h2 id="workflow">Workflow</h2>
+<p>Every calculation is described by a single YAML file. Calling <code>iDFT("input.yaml")</code> runs four stages:</p>
+<ol>
+  <li><strong>Molecular system</strong>: species, sequences, monomers, reactions and constants are parsed.</li>
+  <li><strong>Bulk state (iLST)</strong>: the reservoir is solved for densities, reaction equilibria, charge
+  balance, chemical potentials and pressure.</li>
+  <li><strong>Geometry</strong>: the grid and the external fields are built.</li>
+  <li><strong>Inhomogeneous DFT</strong>: the density profiles are solved iteratively and the analysis files are written.</li>
+</ol>
+<p>The returned object holds everything: <code>system.fields</code>, <code>system.geometry</code>,
+<code>system.bulk_system</code>, <code>system.functionals</code> and <code>system.coulomb</code>.</p>
+
+<h2 id="units">Units</h2>
+<ul>
+  <li>Lengths are in reduced units of <code>l_sc</code> (default 0.5&nbsp;nm, set with
+  <code>reduced_units: {l_sc: 0.3}</code> in nm). A monomer diameter of 1.0 is one <code>l_sc</code>.</li>
+  <li><code>density</code> is a number density in particles per <code>l_sc</code><sup>3</sup>;
+  <code>concentration</code> is in mol/L. Use one or the other for each species.
+  Conversion: &rho; = c&nbsp;&times;&nbsp;0.602214&nbsp;&times;&nbsp;(l_sc in nm)<sup>3</sup>.</li>
+  <li>Surface charge and site density are in elementary charges per <code>l_sc</code><sup>2</sup>. For
+  example, 0.02&nbsp;C/m<sup>2</sup> with l_sc = 0.3&nbsp;nm is 0.02&nbsp;&times;&nbsp;(0.3&times;10<sup>&minus;9</sup>)<sup>2</sup>/e = 0.01123.</li>
+  <li>Energies are in k<sub>B</sub>T; potentials in output files are reduced, &beta;e&psi;.</li>
+</ul>
+
+<h2 id="procedure"><code>procedure</code></h2>
+<p><code>iDFT</code> for an inhomogeneous calculation. A bulk-only calculation uses the same file with
+<code>iLST("input.yaml")</code>; the geometry block is then ignored.</p>
+
+<h2 id="geometry"><code>geometry</code></h2>
+<pre><code>geometry:
+  coordinate_system: Cartesian
+  dimensions: [16.0]          <span class="c"># box length per dimension (l_sc); 1, 2 or 3 entries</span>
+  bin_width: [0.1]            <span class="c"># grid spacing per dimension</span>
+  external_field: { ... }     <span class="c"># see below</span></code></pre>
+<p>In 2D and 3D, directions without walls are periodic. Grid spacing controls accuracy: contact values and
+segment amounts converge roughly quadratically and linearly with spacing respectively (see the
+<a href="examples.html#hs-density-sweep">density-sweep</a> and
+<a href="examples.html#segment-conservation">segment-conservation</a> examples).</p>
+
+<h2 id="fields"><code>external_field</code></h2>
+<p>Each field names the dimensions it acts on with <code>dims</code>. Per-wall values are given as
+<code>[left, right]</code>; with several dimensions, give one such pair per dimension.</p>
+<pre><code>external_field:
+  hard_walls:
+    dims: [1]
+  charged_walls:
+    dims: [1]
+    charge: [-0.01, 0.01]           <span class="c"># e / l_sc^2</span>
+  charge_regulated_walls:
+    dims: [1]
+    site_density: [0.02, 0.02]      <span class="c"># ionizable sites per l_sc^2</span>
+    kind: [acid, base]
+    pKa: [7.0, 7.0]
+    <span class="c"># pH is taken from a proton species (Y, H or H+) with pSpecies;</span>
+    <span class="c"># give pH: here only if the input has no proton species</span>
+  sw_walls:
+    dims: [1]
+    monomers:
+      A:
+        energy: [[-2.0, 0.0]]       <span class="c"># k_BT, left/right wall</span>
+        lambda: [[1.5, 1.5]]        <span class="c"># range, in units of the monomer radius</span></code></pre>
+<ul>
+  <li><code>charged_walls</code> and <code>charge_regulated_walls</code> may be combined; the charges add.</li>
+  <li>For acid sites, log[&alpha;/(1&minus;&alpha;)] = ln10&middot;(pH&minus;p<em>K</em><sub>a</sub>) + &beta;e&psi;<sub>wall</sub>
+  and the wall charge is &minus;&Gamma;&alpha;. For base sites the signs reverse and the charge is +&Gamma;&alpha;.
+  The regulated charge is uniform over each wall.</li>
+  <li><code>pointcharge_walls</code> places discrete charges on a wall (<code>dims</code>, <code>charge</code>).</li>
+  <li><code>input_external</code> reads a potential from a CSV of grid indices and values
+  (<code>dims</code>, <code>file</code>). It is experimental; see the
+  <a href="examples.html#patterned-3d-ideal-gas">3D patterned-field example</a>.</li>
+</ul>
+
+<h2 id="species"><code>species</code></h2>
+<pre><code>species:
+  - sequence: "AAAAAAAAAA"        <span class="c"># a 10-bead chain of monomer A</span>
+    density: 0.0
+    fixed:                        <span class="c"># grafted chain (brush)</span>
+      density: 0.05               <span class="c"># chains per l_sc^2</span>
+      segment: [1]
+      position: ["left"]
+  - sequence: "c"                 <span class="c"># cation</span>
+    density: 0.01
+    adjustable: true              <span class="c"># may be tuned to keep the bulk neutral</span>
+  - sequence: "a"
+    concentration: 0.1            <span class="c"># mol/L instead of density</span>
+  - sequence: "Y"                 <span class="c"># proton</span>
+    pSpecies: 7.0                 <span class="c"># fixes -log10 activity, i.e. the pH</span>
+  - sequence: "Z"                 <span class="c"># hydroxide</span></code></pre>
+<p>A species with a <code>fixed</code> block must have zero bulk density. Species that appear only through
+reactions (such as the ionized state <code>B</code> below) are not listed here.</p>
+
+<h2 id="reactions"><code>reactions</code></h2>
+<pre><code>reactions:
+  - species: ["A", "Y", "B"]      <span class="c"># A  &lt;=&gt;  Y + B   (acid dissociation)</span>
+    coeffs: [-1, +1, +1]
+    pK: 4.756
+  - species: ["Y", "Z"]           <span class="c"># water: 0 &lt;=&gt; Y + Z</span>
+    coeffs: [+1, +1]
+    pK: 14.0</code></pre>
+<p>Negative coefficients are reactants and positive ones products. Several reactions can share species, so
+multi-step equilibria and multi-state monomers are possible.</p>
+
+<h2 id="monomers"><code>monomers</code></h2>
+<pre><code>monomers:
+  A: { diameter: 1.0, valence: 0.0 }
+  B: { diameter: 1.0, valence: -1.0 }
+  c: { diameter: 1.0, valence: +1.0 }
+  a: { diameter: 1.0, valence: -1.0 }
+  Y: { diameter: 1.0, valence: +1.0 }
+  Z: { diameter: 1.0, valence: -1.0 }</code></pre>
+<p>Every label used in a sequence or reaction needs an entry. Diameters may differ between monomers.</p>
+
+<h2 id="pairs"><code>pairs</code></h2>
+<p>Pair parameters for the square-well functional (<code>sw</code> in <code>model</code>):</p>
+<pre><code>pairs:
+  square_well:
+    A, A: { energy: 0.5, lambda: 1.5 }
+    A, B: { energy: 0.2, lambda: 1.5 }</code></pre>
+
+<h2 id="constraints"><code>constraints</code></h2>
+<pre><code>constraints:
+  temperature: 298.15            <span class="c"># K   (default 298.15)</span>
+  dielectric_constant: 78.4      <span class="c"># (default 78.4)</span></code></pre>
+<div class="note warn">Temperature and dielectric constant are read from the <code>constraints</code> block.
+A block named <code>system</code> is not read, and the defaults above apply.</div>
+
+<h2 id="model"><code>model</code></h2>
+<pre><code>model:
+  - ideal
+  - TPT1mfmt     <span class="c"># or mfmt for unbonded beads</span>
+  - TPT1msa      <span class="c"># or msa</span>
+  - sw           <span class="c"># if pairs.square_well is given</span></code></pre>
+<p>Available keys: <code>ideal</code>, <code>mfmt</code>, <code>TPT1mfmt</code>, <code>msa</code>,
+<code>TPT1msa</code>, <code>sw</code>. Do not list a Coulomb term; electrostatics are added automatically
+for charged systems.</p>
+
+<h2 id="electrostatics"><code>electrostatics</code> (optional)</h2>
+<pre><code>electrostatics:
+  solver: half_space   <span class="c"># default is the FFT solver (coul)</span></code></pre>
+<p>The half-space solver is 1D only. It accepts a fixed or regulated charge on the left wall and requires an
+uncharged right wall, which stands for a distant reservoir.</p>
+
+<h2 id="numerical"><code>numerical</code></h2>
+<div class="tablewrap"><table>
+  <tr><th>Key</th><th>Meaning</th><th class="num">Default</th></tr>
+  <tr><td><code>tole</code></td><td>Convergence tolerance on the residual</td><td class="num">1e-6</td></tr>
+  <tr><td><code>max_iters</code></td><td>Maximum iterations</td><td class="num">100000</td></tr>
+  <tr><td><code>damping</code></td><td>Picard mixing fraction</td><td class="num">0.5</td></tr>
+  <tr><td><code>mixing_max</code></td><td>Upper bound on the mixing coefficient</td><td class="num">1.0</td></tr>
+  <tr><td><code>switch_tole</code></td><td>Residual below which Anderson mixing starts</td><td class="num">1e-2</td></tr>
+  <tr><td><code>anderm</code></td><td>Anderson memory depth</td><td class="num">5</td></tr>
+</table></div>
+<p>Charged and reactive systems usually need small mixing, e.g. <code>damping: 0.01</code>,
+<code>mixing_max: 0.01</code>, and sometimes an earlier Anderson switch (<code>switch_tole: 0.1</code>).
+Continuation runs also read <code>ds_init</code>, <code>ds_min</code>, <code>ds_max</code>,
+<code>num_keep</code> and <code>gamma</code>.</p>
+
+<h2 id="outputs">Outputs</h2>
+<p>Files are written to the current working directory:</p>
+<div class="tablewrap"><table>
+  <tr><th>File</th><th>Contents</th></tr>
+  <tr><td><code>rho_beads_K.txt</code></td><td>Density profile of each monomer type on the grid</td></tr>
+  <tr><td><code>rho_segments_&lt;seq&gt;.txt</code></td><td>Density of each segment of a chain</td></tr>
+  <tr><td><code>MEP.txt</code></td><td>Reduced electrostatic potential &beta;e&psi;</td></tr>
+  <tr><td><code>grand_potential.txt</code></td><td>Grand potential of the inhomogeneous system</td></tr>
+  <tr><td><code>cvt.txt</code></td><td>Contact-value-theorem check at each wall</td></tr>
+  <tr><td><code>brush_height.txt</code></td><td>Brush height for grafted chains</td></tr>
+  <tr><td><code>state_fraction_*.txt</code>, <code>total_state_fractions_*.txt</code></td><td>Ionization state of reactive chains, per segment and averaged</td></tr>
+  <tr><td><code>error_log.txt</code></td><td>Solver residual history</td></tr>
+</table></div>
+
+<h2 id="convergence">Checking convergence</h2>
+<p>The solver returns when the residual drops below <code>tole</code> <em>or</em> when it reaches
+<code>max_iters</code>. In the second case it still prints a completion message. Before using a result:</p>
+<ul>
+  <li>check the final residual in <code>error_log.txt</code>, or recompute it from the returned fields
+  (the <a href="examples.html#charge-regulated-slit">charge-regulated example</a> shows how);</li>
+  <li>if the residual oscillates, lower <code>damping</code> and <code>mixing_max</code> and raise
+  <code>max_iters</code>;</li>
+  <li>refine <code>bin_width</code> until the quantities you report stop changing.</li>
+</ul>
+
+<h2 id="extending">Extending SoftDFT</h2>
+<p>Functionals, bulk models and Coulomb solvers are looked up in registries, so a new term is added by
+writing its type and methods and registering a key:</p>
+<pre><code><span class="c"># src/iDFT/functionals/Abstract_Types/functional_registry.jl</span>
+include("../short_range_interactions/my_term.jl")
+register_functional(:my_term, MyTermFunctional)
+
+<span class="c"># src/iLST/free_energy/Abstract_Types/model_registry.jl</span>
+register_model(:my_term, MyTermFreeEnergy)</code></pre>
+<p>The new term then becomes available as <code>model: [..., my_term]</code>. Use the existing
+<code>mfmt.jl</code> and <code>square_well.jl</code> files as templates. A step-by-step developer guide is
+in preparation.</p>
+</div>
+</div>
