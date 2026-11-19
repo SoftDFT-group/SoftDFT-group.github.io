@@ -47,7 +47,7 @@ one, save the input to an empty folder, change into that folder and call
 <code>iDFT("input.yaml")</code> (see <a href="install.html#run">Install</a>). Reported residuals were checked
 independently after each run.</p>
 <p class="small muted">Lengths are in bead diameters d (= l_sc) unless an example sets physical units.</p>
-<div class="filters" role="group" aria-label="Filter examples"><button type="button" data-f="all" aria-pressed="true">All</button><button type="button" data-f="exact" aria-pressed="false">Exact & consistency checks</button><button type="button" data-f="hs" aria-pressed="false">Hard spheres</button><button type="button" data-f="polymer" aria-pressed="false">Polymers & brushes</button><button type="button" data-f="elec" aria-pressed="false">Electrolytes</button><button type="button" data-f="lit" aria-pressed="false">Literature benchmarks</button></div>
+<div class="filters" role="group" aria-label="Filter examples"><button type="button" data-f="all" aria-pressed="true">All</button><button type="button" data-f="exact" aria-pressed="false">Exact & consistency checks</button><button type="button" data-f="hs" aria-pressed="false">Hard spheres</button><button type="button" data-f="polymer" aria-pressed="false">Polymers & brushes</button><button type="button" data-f="elec" aria-pressed="false">Electrolytes</button><button type="button" data-f="reg" aria-pressed="false">Charge regulation</button><button type="button" data-f="lit" aria-pressed="false">Literature benchmarks</button></div>
 <article class="example" data-cat="exact"><div><span class="num">Example 01</span><h3 id="ideal-gas-slit">Ideal gas in a hard-wall slit</h3><div class="meta"><span class="chip cat">Exact & consistency checks</span><span class="chip">1D</span><span class="chip">ideal</span></div><p>The simplest possible inhomogeneous calculation: an ideal gas between two hard walls. With only the ideal free-energy term, the equilibrium density is the Boltzmann profile, so SoftDFT can be compared with the exact answer at every grid point.</p><ul class="results"><li>Maximum absolute profile error about 7&times;10<sup>&minus;18</sup> (machine precision).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
 geometry:
   coordinate_system: Cartesian
@@ -709,7 +709,91 @@ model:
   - ideal
   - mfmt
   - sw</code></pre><p class="small"><a href="examples/files/square-well-adsorption/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch17.png" alt="Schematic of the system: Selective adsorption with square-well attraction"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex17_square_well.png"><img loading="lazy" src="assets/img/examples/ex17_square_well.png" alt="Density of species A and B with and without wall attraction"></a><figcaption>Attractive wall (solid) vs. control (dotted).</figcaption></figure></div></article>
-<article class="example" data-cat="lit"><div><span class="num">Example 17</span><h3 id="primitive-electrolyte-edl">Electric double layer: comparison with Monte Carlo</h3><div class="meta"><span class="chip cat">Literature benchmarks</span><span class="chip">1D</span><span class="chip">MC comparison</span><span class="chip">physical units</span></div><p>A 0.1 M 1:1 primitive-model electrolyte (3 &Aring; ions) between electrodes at &mp;0.02 C/m<sup>2</sup>, set up in physical units with <code>reduced_units.l_sc: 0.3</code> nm. SoftDFT (mFMT + MSA) is compared directly with the published raw Monte Carlo profiles.</p><ul class="results"><li>Cation RMSE 0.0028 M and anion RMSE 0.0014 M over 1.6&ndash;30 &Aring;.</li><li>Wall potential relative to midplane: &minus;1.189 kT/e (SoftDFT) vs. &minus;1.202 kT/e (MC).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+<article class="example" data-cat="reg"><div><span class="num">Example 17</span><h3 id="charge-regulated-slit">Charge-regulated walls</h3><div class="meta"><span class="chip cat">Charge regulation</span><span class="chip">1D</span><span class="chip">FFT Poisson</span><span class="chip">pH</span></div><p>Each wall carries ionizable sites (Γ = 0.02 e/d<sup>2</sup>): acid sites on the left and base sites on the right, both with p<em>K</em><sub>a</sub> 7. The site charge follows log[&alpha;/(1&minus;&alpha;)] = ln10&middot;(pH &minus; p<em>K</em><sub>a</sub>) + &beta;e&psi;<sub>wall</sub> (sign reversed for bases) and is solved self-consistently with the ion densities and the FFT Poisson solution. The reservoir pH is taken from the proton species <code>Y</code>.</p><ul class="results"><li>Wall charges move from &plusmn;0.0100 (zero-potential guess) to &plusmn;0.00879 e/d<sup>2</sup>.</li><li>Charge-law residual 3&times;10<sup>&minus;10</sup>; full DFT residual 1.2&times;10<sup>&minus;7</sup>.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charge_regulated_walls:
+      dims: [1]
+      site_density: [0.02, 0.02] # maximum magnitude, e / l_sc^2
+      kind: [acid, base]         # left negative, right positive
+      pKa: [7.0, 7.0]           # base uses conjugate-acid pKa
+species:
+  - sequence: &quot;c&quot;
+    density: 0.02
+  - sequence: &quot;a&quot;
+    density: 0.02
+    adjustable: true           # absorbs the small proton charge in the bulk
+  - sequence: &quot;Y&quot;             # proton reservoir; its pSpecies supplies the wall pH
+    pSpecies: 7.0
+monomers:
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+  Y:
+    diameter: 1.0
+    valence: 1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.1
+  mixing_max: 0.1
+  tole: 1e-6
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/charge-regulated-slit/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure><a href="assets/img/examples/excr_regulated_slit.png"><img loading="lazy" src="assets/img/examples/excr_regulated_slit.png" alt="Cation, anion and potential profiles between an acid wall and a base wall"></a><figcaption>Ion densities (left axis) and reduced potential (right axis). The protons, at about 10<sup>&minus;8</sup>, are too dilute to show.</figcaption></figure></div></article>
+<article class="example" data-cat="reg"><div><span class="num">Example 18</span><h3 id="mixed-fixed-regulated">Fixed-charge wall facing a charge-regulated wall</h3><div class="meta"><span class="chip cat">Charge regulation</span><span class="chip">1D</span><span class="chip">mixed walls</span></div><p><code>charged_walls</code> and <code>charge_regulated_walls</code> can be combined; their charges add on each wall. Here the left wall has a fixed charge of &minus;0.01 and the right wall has regulated base sites.</p><ul class="results"><li>Fixed wall stays at &minus;0.010; the regulated wall converges to +0.00879 e/d<sup>2</sup>.</li><li>Charge-law residual 1.7&times;10<sup>&minus;10</sup>; full DFT residual 7.8&times;10<sup>&minus;7</sup>.</li><li>&minus;0.010 is what the acid wall of the previous example would carry with no regulation (half its sites charged at pH = p<em>K</em><sub>a</sub>). Comparing the two left walls isolates the regulation effect: the wall potential weakens from &minus;0.274 to &minus;0.244 and the counterion contact density drops from 0.0248 to 0.0242.</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+geometry:
+  coordinate_system: Cartesian
+  dimensions: [12.0]
+  bin_width: [0.2]
+  external_field:
+    hard_walls:
+      dims: [1]
+    charged_walls:
+      dims: [1]
+      charge: [-0.01, 0.0]
+    charge_regulated_walls:
+      dims: [1]
+      site_density: [0.0, 0.02]
+      kind: [acid, base]
+      pKa: [7.0, 7.0]
+      pH: 7.0
+species:
+  - sequence: &quot;c&quot;
+    density: 0.02
+  - sequence: &quot;a&quot;
+    density: 0.02
+monomers:
+  c:
+    diameter: 1.0
+    valence: 1.0
+  a:
+    diameter: 1.0
+    valence: -1.0
+system:
+  temperature: 298.15
+  dielectric_constant: 78.4
+numerical:
+  max_iters: 400
+  damping: 0.1
+  mixing_max: 0.1
+  tole: 1e-6
+model:
+  - ideal
+  - mfmt
+  - msa</code></pre><p class="small"><a href="examples/files/mixed-fixed-regulated/input.yaml" download>Download input.yaml</a></p></details></div><div class="figs"><figure><a href="assets/img/examples/excr_mixed_walls.png"><img loading="lazy" src="assets/img/examples/excr_mixed_walls.png" alt="Ion densities and potential near a fixed-charge wall compared with a charge-regulated acid wall"></a><figcaption>Near the left wall: fixed charge (solid) vs. regulated acid sites (dashed). The negative potential holds protons at the surface, suppresses dissociation and weakens the double layer.</figcaption></figure></div></article>
+<article class="example" data-cat="lit"><div><span class="num">Example 19</span><h3 id="primitive-electrolyte-edl">Electric double layer: comparison with Monte Carlo</h3><div class="meta"><span class="chip cat">Literature benchmarks</span><span class="chip">1D</span><span class="chip">MC comparison</span><span class="chip">physical units</span></div><p>A 0.1 M 1:1 primitive-model electrolyte (3 &Aring; ions) between electrodes at &mp;0.02 C/m<sup>2</sup>, set up in physical units with <code>reduced_units.l_sc: 0.3</code> nm. SoftDFT (mFMT + MSA) is compared directly with the published raw Monte Carlo profiles.</p><ul class="results"><li>Cation RMSE 0.0028 M and anion RMSE 0.0014 M over 1.6&ndash;30 &Aring;.</li><li>Wall potential relative to midplane: &minus;1.189 kT/e (SoftDFT) vs. &minus;1.202 kT/e (MC).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
 reduced_units:
   l_sc: 0.3
 geometry:
@@ -747,7 +831,7 @@ model:
   - ideal
   - mfmt
   - msa</code></pre><p class="small"><a href="examples/files/primitive-electrolyte-edl/input.yaml" download>Download input.yaml</a></p></details><p class="small muted">Reference: M. Valiskó, T. Kristóf, D. Gillespie, D. Boda, <em>J. Chem. Phys.</em> 148, 024701 (2018), doi:10.1063/1.5022036.</p></div><div class="figs"><figure class="sketch"><img loading="lazy" src="assets/img/sketches/sketch22.png" alt="Schematic of the system: Electric double layer: comparison with Monte Carlo"><figcaption>System sketch (not to scale).</figcaption></figure><figure><a href="assets/img/examples/ex22_mc_overlay.png"><img loading="lazy" src="assets/img/examples/ex22_mc_overlay.png" alt="SoftDFT ion and potential profiles overlaid on Monte Carlo data"></a><figcaption>Lines: SoftDFT. Points: Monte Carlo.</figcaption></figure></div></article>
-<article class="example" data-cat="lit"><div><span class="num">Example 18</span><h3 id="weak-brush-published">Weak polyacid brush at published conditions</h3><div class="meta"><span class="chip cat">Literature benchmarks</span><span class="chip">1D</span><span class="chip">Ising DFT</span><span class="chip">physical units</span></div><p>25-segment weak-acid chains (bead diameter 0.355 nm, p<em>K</em> 4.0) grafted at 0.79 chains/nm<sup>2</sup> in 5 mM NaCl, matching the conditions of Gallegos <em>et&nbsp;al.</em> (2026). The input shows how physical concentrations and grafting densities are converted to reduced units.</p><ul class="results"><li>pH 2.0 profiles converge with grid refinement beyond ~0.8 nm.</li><li>pH 6.0 mean ionization 0.230&ndash;0.233, within the range read from the published curve (about 0.21&ndash;0.24).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
+<article class="example" data-cat="lit"><div><span class="num">Example 20</span><h3 id="weak-brush-published">Weak polyacid brush at published conditions</h3><div class="meta"><span class="chip cat">Literature benchmarks</span><span class="chip">1D</span><span class="chip">Ising DFT</span><span class="chip">physical units</span></div><p>25-segment weak-acid chains (bead diameter 0.355 nm, p<em>K</em> 4.0) grafted at 0.79 chains/nm<sup>2</sup> in 5 mM NaCl, matching the conditions of Gallegos <em>et&nbsp;al.</em> (2026). The input shows how physical concentrations and grafting densities are converted to reduced units.</p><ul class="results"><li>pH 2.0 profiles converge with grid refinement beyond ~0.8 nm.</li><li>pH 6.0 mean ionization 0.230&ndash;0.233, within the range read from the published curve (about 0.21&ndash;0.24).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
 reduced_units:
   l_sc: 0.355
 geometry:

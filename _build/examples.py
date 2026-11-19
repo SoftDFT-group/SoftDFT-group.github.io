@@ -7,6 +7,7 @@ CATEGORIES = {
     "hs": "Hard spheres",
     "polymer": "Polymers & brushes",
     "elec": "Electrolytes",
+    "reg": "Charge regulation",
     "lit": "Literature benchmarks",
 }
 
@@ -191,6 +192,35 @@ EXAMPLES = [
          results=["Contact density of A is 7.2&times; its value in the non-attractive control."],
          fig="ex17_square_well.png", alt="Density of species A and B with and without wall attraction",
          caption="Attractive wall (solid) vs. control (dotted)."),
+
+    # ------------------------------------------------------------ charge regulation
+    dict(slug="charge-regulated-slit", cat="reg", tags=["1D", "FFT Poisson", "pH"], from_code=True,
+         title="Charge-regulated walls",
+         inputs=[("charge_regulated_slit/input.yaml", "input.yaml")],
+         summary="<p>Each wall carries ionizable sites (Γ = 0.02 e/d<sup>2</sup>): acid sites on the left and base "
+                 "sites on the right, both with p<em>K</em><sub>a</sub> 7. The site charge follows "
+                 "log[&alpha;/(1&minus;&alpha;)] = ln10&middot;(pH &minus; p<em>K</em><sub>a</sub>) + &beta;e&psi;<sub>wall</sub> "
+                 "(sign reversed for bases) and is solved self-consistently with the ion densities and the FFT "
+                 "Poisson solution. The reservoir pH is taken from the proton species <code>Y</code>.</p>",
+         results=["Wall charges move from &plusmn;0.0100 (zero-potential guess) to &plusmn;0.00879 e/d<sup>2</sup>.",
+                  "Charge-law residual 3&times;10<sup>&minus;10</sup>; full DFT residual 1.2&times;10<sup>&minus;7</sup>."],
+         fig="excr_regulated_slit.png", alt="Cation, anion and potential profiles between an acid wall and a base wall",
+         caption="Ion densities (left axis) and reduced potential (right axis). The protons, at about 10<sup>&minus;8</sup>, are too dilute to show."),
+    dict(slug="mixed-fixed-regulated", cat="reg", tags=["1D", "mixed walls"], from_code=True,
+         title="Fixed-charge wall facing a charge-regulated wall",
+         inputs=[("mixed_fixed_regulated_slit/input.yaml", "input.yaml")],
+         summary="<p><code>charged_walls</code> and <code>charge_regulated_walls</code> can be combined; their "
+                 "charges add on each wall. Here the left wall has a fixed charge of &minus;0.01 and the right wall "
+                 "has regulated base sites.</p>",
+         results=["Fixed wall stays at &minus;0.010; the regulated wall converges to +0.00879 e/d<sup>2</sup>.",
+                  "Charge-law residual 1.7&times;10<sup>&minus;10</sup>; full DFT residual 7.8&times;10<sup>&minus;7</sup>.",
+                  "&minus;0.010 is what the acid wall of the previous example would carry with no regulation "
+                  "(half its sites charged at pH = p<em>K</em><sub>a</sub>). Comparing the two left walls isolates the "
+                  "regulation effect: the wall potential weakens from &minus;0.274 to &minus;0.244 and the counterion "
+                  "contact density drops from 0.0248 to 0.0242."],
+         fig="excr_mixed_walls.png", alt="Ion densities and potential near a fixed-charge wall compared with a charge-regulated acid wall",
+         caption="Near the left wall: fixed charge (solid) vs. regulated acid sites (dashed). The negative potential "
+                 "holds protons at the surface, suppresses dissociation and weakens the double layer."),
 
     # ------------------------------------------------------------ literature
     dict(slug="primitive-electrolyte-edl", cat="lit", tags=["1D", "MC comparison", "physical units"],
