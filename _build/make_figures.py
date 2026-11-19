@@ -1,6 +1,6 @@
 """Regenerate example figures for the SoftDFT website from saved example data.
 
-Usage:  python _build/make_figures.py <path-to-Research/example> [<path-to-SoftDFT-code>]
+Usage:  python _build/make_figures.py <path-to-Research/example>
 Writes PNGs into assets/img/examples/.
 """
 import csv
@@ -175,57 +175,3 @@ def ex9(ax):
     ax.set_xticks(range(1, 6)); ax.set_xlabel("segment (1 = grafted end)")
     ax.set_ylabel("segment-amount error (%)"); ax.legend()
 fig("ex09_segment_conservation.png", ex9)
-
-
-# charge-regulated examples from the SoftDFT code folder (raw output files)
-def read_table(path):
-    lines = Path(path).read_text().split("\n")
-    head = lines[0].split()[1:]
-    cols = {h: [] for h in head}
-    for ln in lines[1:]:
-        p = ln.split()
-        if len(p) == len(head) + 1:
-            for h, v in zip(head, p[1:]):
-                cols[h].append(float(v))
-    return cols
-
-
-def ion_potential(folder, title):
-    def draw(ax):
-        rho, mep = read_table(folder / "rho_beads_K.txt"), read_table(folder / "MEP.txt")
-        z = [0.2 * i for i in range(len(rho["c"]))]
-        ax.plot(z, rho["c"], color=C[0], lw=1.8, label="cation")
-        ax.plot(z, rho["a"], color=C[1], lw=1.8, label="anion")
-        ax.set_xlabel("z / d"); ax.set_ylabel(r"$\rho\,d^3$")
-        ax.set_title(title, fontsize=10, loc="left")
-        a2 = ax.twinx(); a2.grid(False); a2.spines["right"].set_visible(True)
-        a2.plot(z, mep["MEP"], color=C[2], lw=1.2, ls="--", label=r"$\beta e\psi$")
-        a2.set_ylabel(r"$\beta e \psi$")
-        h1, l1 = ax.get_legend_handles_labels(); h2, l2 = a2.get_legend_handles_labels()
-        ax.legend(h1 + h2, l1 + l2, loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0.06))
-    return draw
-
-
-if len(sys.argv) > 2:
-    CODE = Path(sys.argv[2]) / "examples"
-    fig("excr_regulated_slit.png", ion_potential(CODE / "charge_regulated_slit",
-        "left: acid sites, right: base sites"))
-    def left_wall_compare(axes):
-        reg = (read_table(CODE / "charge_regulated_slit/rho_beads_K.txt"),
-               read_table(CODE / "charge_regulated_slit/MEP.txt"))
-        fix = (read_table(CODE / "mixed_fixed_regulated_slit/rho_beads_K.txt"),
-               read_table(CODE / "mixed_fixed_regulated_slit/MEP.txt"))
-        n = 21  # z = 0 .. 4d
-        z = [0.2 * i for i in range(n)]
-        a1, a2 = axes
-        for (rho, mep), lab, ls in [(fix, "fixed −0.010", "-"), (reg, "regulated acid (−0.00879)", "--")]:
-            a1.plot(z[2:], rho["c"][2:n], color=C[0], ls=ls, lw=1.8, label=f"cation, {lab}")
-            a1.plot(z[2:], rho["a"][2:n], color=C[1], ls=ls, lw=1.8, label=f"anion, {lab}")
-            a2.plot(z, mep["MEP"][:n], color=C[2], ls=ls, lw=1.8, label=lab)
-        a1.set_xlabel("z / d (from left wall)"); a1.set_ylabel(r"$\rho\,d^3$"); a1.legend(fontsize=8)
-        a2.set_xlabel("z / d (from left wall)"); a2.set_ylabel(r"$\beta e \psi$"); a2.legend(fontsize=8)
-
-    f, axes = plt.subplots(1, 2, figsize=(8.4, 3.6))
-    left_wall_compare(axes)
-    f.tight_layout(); f.savefig(OUT / "excr_mixed_walls.png"); plt.close(f)
-    print("wrote excr_mixed_walls.png")

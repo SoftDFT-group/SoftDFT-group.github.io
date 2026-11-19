@@ -238,8 +238,7 @@ Continuation runs also read <code>ds_init</code>, <code>ds_min</code>, <code>ds_
 <p>The solver iterates until the residual drops below <code>tole</code> or the iteration limit
 <code>max_iters</code> is reached. Before using a result:</p>
 <ul>
-  <li>check the final residual in <code>error_log.txt</code>, or recompute it from the returned fields
-  (the <a href="examples.html#charge-regulated-slit">charge-regulated example</a> shows how);</li>
+  <li>check the final residual in <code>error_log.txt</code>, or recompute it from the returned fields;</li>
   <li>if the residual oscillates, lower <code>damping</code> and <code>mixing_max</code> and raise
   <code>max_iters</code>;</li>
   <li>refine <code>bin_width</code> until the quantities you report stop changing.</li>
