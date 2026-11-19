@@ -144,6 +144,11 @@ details pre { margin-top: 10px; max-height: 420px; }
 .person .role { color: var(--crimson); font-weight: 600; margin: 2px 0 10px; }
 .person .links { display: flex; flex-wrap: wrap; gap: 14px; font-size: .93rem; }
 
+.students { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.student { background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--crimson); border-radius: var(--radius); padding: 14px 18px; }
+.student h3 { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; margin: 0; }
+.student p { margin: 2px 0 0; color: var(--crimson); font-weight: 600; font-size: .92rem; }
+
 /* ---------- publications ---------- */
 ol.pubs { padding-left: 1.3rem; }
 ol.pubs li { margin-bottom: .9rem; }
