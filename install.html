@@ -94,8 +94,8 @@ julia&gt; system = iDFT("input.yaml")</code></pre>
 <p>The first call compiles the code and can take about a minute; later runs in the same session are fast.
 Results are written to the current folder (see <a href="docs.html#outputs">Outputs</a>). For a bulk-only
 calculation, include <code>src/iLST/iLST.jl</code> and call <code>iLST("input.yaml")</code>.</p>
-<div class="note">Check convergence after every run: the solver stops at <code>max_iters</code> even if the
-tolerance was not reached. See <a href="docs.html#convergence">Checking convergence</a>.</div>
+<div class="note">Check the final residual after every run. See
+<a href="docs.html#convergence">Checking convergence</a>.</div>
 
 <h2 id="vscode">Using VS Code</h2>
 <p>Install the <a href="https://www.julia-vscode.org/">Julia extension</a>, open your working folder, start a

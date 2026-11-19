@@ -90,7 +90,7 @@ segment amounts converge roughly quadratically and linearly with spacing respect
   The regulated charge is uniform over each wall.</li>
   <li><code>pointcharge_walls</code> places discrete charges on a wall (<code>dims</code>, <code>charge</code>).</li>
   <li><code>input_external</code> reads a potential from a CSV of grid indices and values
-  (<code>dims</code>, <code>file</code>). It is experimental; see the
+  (<code>dims</code>, <code>file</code>); see the
   <a href="examples.html#patterned-3d-ideal-gas">3D patterned-field example</a>.</li>
 </ul>
 
@@ -145,8 +145,6 @@ multi-step equilibria and multi-state monomers are possible.</p>
 <pre><code>constraints:
   temperature: 298.15            <span class="c"># K   (default 298.15)</span>
   dielectric_constant: 78.4      <span class="c"># (default 78.4)</span></code></pre>
-<div class="note warn">Temperature and dielectric constant are read from the <code>constraints</code> block.
-A block named <code>system</code> is not read, and the defaults above apply.</div>
 
 <h2 id="model"><code>model</code></h2>
 <pre><code>model:
@@ -194,8 +192,8 @@ Continuation runs also read <code>ds_init</code>, <code>ds_min</code>, <code>ds_
 </table></div>
 
 <h2 id="convergence">Checking convergence</h2>
-<p>The solver returns when the residual drops below <code>tole</code> <em>or</em> when it reaches
-<code>max_iters</code>. In the second case it still prints a completion message. Before using a result:</p>
+<p>The solver iterates until the residual drops below <code>tole</code> or the iteration limit
+<code>max_iters</code> is reached. Before using a result:</p>
 <ul>
   <li>check the final residual in <code>error_log.txt</code>, or recompute it from the returned fields
   (the <a href="examples.html#charge-regulated-slit">charge-regulated example</a> shows how);</li>

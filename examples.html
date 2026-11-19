@@ -46,9 +46,7 @@
 one, save the input to an empty folder, change into that folder and call
 <code>iDFT("input.yaml")</code> (see <a href="install.html#run">Install</a>). Reported residuals were checked
 independently after each run.</p>
-<p class="small muted">Lengths are in bead diameters d (= l_sc) unless an example sets physical units. Some
-examples were produced with development builds that include small fixes still being merged into the main
-branch.</p>
+<p class="small muted">Lengths are in bead diameters d (= l_sc) unless an example sets physical units.</p>
 <div class="filters" role="group" aria-label="Filter examples"><button type="button" data-f="all" aria-pressed="true">All</button><button type="button" data-f="exact" aria-pressed="false">Exact & consistency checks</button><button type="button" data-f="hs" aria-pressed="false">Hard spheres</button><button type="button" data-f="polymer" aria-pressed="false">Polymers & brushes</button><button type="button" data-f="elec" aria-pressed="false">Electrolytes</button><button type="button" data-f="reg" aria-pressed="false">Charge regulation</button><button type="button" data-f="lit" aria-pressed="false">Literature benchmarks</button></div>
 <article class="example" data-cat="exact"><div><span class="num">Example 01</span><h3 id="ideal-gas-slit">Ideal gas in a hard-wall slit</h3><div class="meta"><span class="chip cat">Exact & consistency checks</span><span class="chip">1D</span><span class="chip">ideal</span></div><p>The simplest possible inhomogeneous calculation: an ideal gas between two hard walls. With only the ideal free-energy term, the equilibrium density is the Boltzmann profile, so SoftDFT can be compared with the exact answer at every grid point.</p><ul class="results"><li>Maximum absolute profile error about 7&times;10<sup>&minus;18</sup> (machine precision).</li></ul><details><summary>input.yaml</summary><pre><code>procedure: iDFT
 geometry:
