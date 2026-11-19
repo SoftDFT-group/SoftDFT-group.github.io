@@ -9,6 +9,7 @@ entries in _build/examples.py, then run:
 The optional paths refresh the downloadable input files in examples/files/.
 Without them, the existing copies are kept.
 """
+import hashlib
 import html
 import re
 import shutil
@@ -47,7 +48,7 @@ LAYOUT = """<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/site.css?v={cssver}">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -120,7 +121,8 @@ def pagehead(eyebrow, h1, sub):
 
 
 def render(file, title, desc, body, head="", scripts=""):
-    page = LAYOUT.format(title=html.escape(title), desc=html.escape(desc), site=SITE_URL,
+    cssver = hashlib.sha1((ROOT / "assets/css/site.css").read_bytes()).hexdigest()[:8]
+    page = LAYOUT.format(cssver=cssver, title=html.escape(title), desc=html.escape(desc), site=SITE_URL,
                          file="" if file == "index.html" else file, nav=nav_html(file),
                          head=head, body=body, year=YEAR, repo=REPO_URL, scripts=scripts)
     (ROOT / file).write_text(page, encoding="utf-8", newline="\n")
